@@ -3,8 +3,13 @@ import './TodoItem.css';
 
 export default function TodoItem(props) {
     return (
-        <div className="todo-item"
-            contentEditable data-placeholder="New Todo"
-            suppressContentEditableWarning>{props.item.todo}</div>
+        <input  type="text"
+                className="todo-item"
+                placeholder="New Todo"
+                id={props.item._id}
+                onChange={props.handleItemChange}
+                onBlur={props.handleItemUpdate}
+                value={props.item.todo}>
+        </input>
     );
 };

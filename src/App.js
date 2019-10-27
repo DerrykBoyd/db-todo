@@ -13,7 +13,6 @@ function App() {
     // set initial items from the remote DB - only runs once
     function getData() {
       db.remoteDB.allDocs({ include_docs: true }).then(res => {
-        console.log(res);
         let fetchedItems = [];
         res.rows.map(row => fetchedItems.push(row.doc));
         setItems([...fetchedItems]);
@@ -75,7 +74,7 @@ function App() {
     };
   }, [items])
 
-  const handleSubmit = (e) => {
+  const handleLocalAdd = (e) => {
     let itemToAdd = {
       _id: new Date().toISOString(),
       todo: newItem,
@@ -87,6 +86,24 @@ function App() {
     e.preventDefault();
   }
 
+  // update items in state when typing
+  const handleItemChange = (e) => {
+    let newItems = [...items];
+    let changeIndex = newItems.findIndex(el => el._id === e.target.id);
+    newItems[changeIndex].todo = e.target.value;
+    setItems(newItems);
+  }
+
+  // send updated items to DB when unfocused
+  const handleItemUpdate = (e) => {
+    let copyItems = [...items];
+    // find updated item
+    let updatedIndex = copyItems.findIndex(el => el._id === e.target.id);
+    if (updatedIndex === -1) return //item not found
+    // update item in DB
+    db.updateItem(copyItems[updatedIndex]);
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -96,10 +113,15 @@ function App() {
             My ToDo List
           </p>
           {items.map(item => {
-            return <TodoItem key={item._id} item={item}
-              checked={item.completed}></TodoItem>
+            return <TodoItem
+              key={item._id}
+              item={item}
+              checked={item.completed}
+              handleItemUpdate={handleItemUpdate}
+              handleItemChange={handleItemChange}>
+              </TodoItem>
           })}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleLocalAdd}>
             <input type="text" value={newItem} placeholder="New Todo"
               onChange={e => setNewItem(e.target.value)}>
             </input>

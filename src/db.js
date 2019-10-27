@@ -16,7 +16,14 @@ export async function deleteItem(item) {
 }
 
 export async function updateItem(item) {
-
+    localDB.get(item._id).then((doc => {
+        if (item.todo === doc.todo) return //item has not changed
+        return localDB.put({
+            _id: item._id,
+            _rev: doc._rev,
+            todo: item.todo,
+        })
+    }))
 }
 
 export {localDB, remoteDB};
