@@ -160,7 +160,6 @@ function App() {
         })}
       </section>
       <TodoAdd
-        className="todo-add-footer"
         newItem={newItem}
         handleNewChange={handleNewChange}
         handleLocalAdd={handleLocalAdd}>
