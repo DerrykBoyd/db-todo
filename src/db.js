@@ -22,6 +22,7 @@ export async function updateItem(item) {
             _id: item._id,
             _rev: doc._rev,
             todo: item.todo,
+            completed: item.completed,
         })
     }))
 }

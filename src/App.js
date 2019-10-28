@@ -3,6 +3,7 @@ import logo from './logo.svg';
 import './App.css';
 import * as db from './db';
 import TodoItem from './Components/TodoItem';
+import TodoAdd from './Components/TodoAdd'
 
 function App() {
 
@@ -14,7 +15,7 @@ function App() {
     function getData() {
       db.remoteDB.allDocs({ include_docs: true }).then(res => {
         let fetchedItems = [];
-        res.rows.map(row => fetchedItems.push(row.doc));
+        res.rows.map(row => fetchedItems.unshift(row.doc));
         setItems([...fetchedItems]);
       });
     }
@@ -41,11 +42,11 @@ function App() {
         setItems(newItems);
         return;
       } else {
-        newItems.push(doc);
+        newItems.unshift(doc);
         setItems(newItems);
       }
     }
-    
+
     let dbSync = db.localDB.sync(db.remoteDB, {
       live: true,
       retry: true,
@@ -75,13 +76,20 @@ function App() {
   }, [items])
 
   const handleLocalAdd = (e) => {
+    // check if event came from keydown but not enter key => do nothing
+    if (e.keyCode && e.keyCode !== 13) return;
     let itemToAdd = {
       _id: new Date().toISOString(),
       todo: newItem,
       completed: false,
     }
     db.addItem(itemToAdd)
-    setItems([...items, itemToAdd]);
+    setItems([itemToAdd, ...items]);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth"
+    })
     setNewItem("");
     e.preventDefault();
   }
@@ -100,35 +108,63 @@ function App() {
     // find updated item
     let updatedIndex = copyItems.findIndex(el => el._id === e.target.id);
     if (updatedIndex === -1) return //item not found
+    // check if deleted and process
+    if (e.keyCode === 8 && !e.target.value) {
+      // delete item from DB
+      db.deleteItem(copyItems[updatedIndex]).then(() => {
+        // remove from local state
+        copyItems.splice(updatedIndex, 1);
+        setItems(copyItems);
+        return;
+      }).catch(err => "Error removing from DB" + err);
+    } else {
+      db.updateItem(copyItems[updatedIndex]);
+    }
+    // check if enter and add new blank todo below
+    // COME BACK TO THIS WHEN DOING SORTABLE
+    // if (e.keyCode === 13) {
+    //   let newBlank = {
+    //     _id: new Date().toISOString(),
+    //     todo: newItem,
+    //     completed: false,
+    //   }
+    //   copyItems.splice(updatedIndex + 1, 0, newBlank);
+    //   setItems(copyItems);
+    //   db.addItem(newBlank);
+    //   return;
+    // }
     // update item in DB
-    db.updateItem(copyItems[updatedIndex]);
+  }
+
+  // update newItem state on input change
+  const handleNewChange = (e) => {
+    setNewItem(e.target.value);
   }
 
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-        <div className="item-wrapper">
-          <p>
-            My ToDo List
-          </p>
-          {items.map(item => {
-            return <TodoItem
-              key={item._id}
-              item={item}
-              checked={item.completed}
-              handleItemUpdate={handleItemUpdate}
-              handleItemChange={handleItemChange}>
-              </TodoItem>
-          })}
-          <form onSubmit={handleLocalAdd}>
-            <input type="text" value={newItem} placeholder="New Todo"
-              onChange={e => setNewItem(e.target.value)}>
-            </input>
-            <input type="submit" className="add-btn" value="Add Item"></input>
-          </form>
-        </div>
+        <h1 className="app-title">DB Todo App</h1>
       </header>
+      <section className="todo-items">
+        {items.map(item => {
+          return <TodoItem
+            key={item._id}
+            item={item}
+            checked={item.completed}
+            handleItemUpdate={handleItemUpdate}
+            handleLocalAdd={handleLocalAdd}
+            handleItemChange={handleItemChange}>
+          </TodoItem>
+        })}
+      </section>
+      <TodoAdd
+        className="todo-add-footer"
+        newItem={newItem}
+        handleNewChange={handleNewChange}
+        handleLocalAdd={handleLocalAdd}>
+      </TodoAdd>
     </div>
   );
 }

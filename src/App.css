@@ -1,25 +1,41 @@
 .App {
   text-align: center;
-}
-
-.App-logo {
-  height: 15vmin;
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-}
-
-.App-header {
   background-color: #000a12;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  font-size: 1.2rem;
   color: white;
 }
 
-.App-link {
-  color: #09d3ac;
+.App-header {
+  position: fixed;
+  top: 0;
+  height: 3rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;;
+  color: white;
+  border-bottom: solid 1px grey;
+  background-color: #000a12;
+}
+
+input:focus {
+  outline: none;
+}
+
+.App-logo {
+  height: 3rem;
+}
+
+.app-title {
+  font-size: 1.75rem;
+  margin: 0.75rem;
+}
+
+.todo-items {
+  padding: 3.5rem 0 4rem 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  max-width: 400px;
+  margin: auto;
 }

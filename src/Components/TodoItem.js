@@ -8,6 +8,7 @@ export default function TodoItem(props) {
                 placeholder="New Todo"
                 id={props.item._id}
                 onChange={props.handleItemChange}
+                onKeyDown={props.handleItemUpdate}
                 onBlur={props.handleItemUpdate}
                 value={props.item.todo}>
         </input>

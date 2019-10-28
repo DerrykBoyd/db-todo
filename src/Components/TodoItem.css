@@ -1,12 +1,11 @@
 .todo-item {
     color: white;
     text-align: left;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     background-color: #000a12;
     border: none;
-    width: 60%;
-    margin: 0.4rem 0.25rem 0.25rem 4rem;
-    padding: 0.25rem 0.5rem;
+    margin: 0.4rem 1rem 0.25rem 4rem;
+    padding: 0.2rem;
   }
   
   [placeholder]:empty:before{
@@ -16,15 +15,5 @@
   }
 
   .todo-item:focus {
-      outline: none;
       border-bottom: solid 1px rgba(136, 136, 136, 0.6);
-  }
-
-  .item-wrapper {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding-bottom: 4rem;
   }
