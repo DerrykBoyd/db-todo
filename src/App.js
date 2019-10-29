@@ -102,7 +102,18 @@ function App() {
     setItems(newItems);
   }
 
-  // send updated items to DB when unfocused
+  // delete item from delete button
+  const deleteItem = (item) => {
+    db.deleteItem(item).then(() => {
+      // remove from local state
+      let copyItems = [...items];
+      let delInd = copyItems.findIndex(el => el._id === item._id);
+      copyItems.splice(delInd, 1);
+      setItems(copyItems);
+    })
+  }
+
+  // send updated items to DB
   const handleItemUpdate = (e) => {
     let copyItems = [...items];
     // find updated item
@@ -155,7 +166,8 @@ function App() {
             checked={item.completed}
             handleItemUpdate={handleItemUpdate}
             handleLocalAdd={handleLocalAdd}
-            handleItemChange={handleItemChange}>
+            handleItemChange={handleItemChange}
+            deleteItem={deleteItem}>
           </TodoItem>
         })}
       </section>
