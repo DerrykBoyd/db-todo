@@ -50,11 +50,11 @@ export default function TodoItem(props) {
     return (
         <div className="todo-item-wrapper">
             <i  onClick={toggleChecked}
-                className={`material-icons ${props.checked ? "hidden" : null}`}>check_box_outline_blank</i>
+                className={`material-icons ${props.checked ? "hidden" : ''}`}>check_box_outline_blank</i>
             <i  onClick={toggleChecked} 
-                className={`material-icons checked ${!props.checked ? "hidden" : null}`}>check_box</i>
+                className={`material-icons checked ${!props.checked ? "hidden" : ''}`}>check_box</i>
             <input  type="text"
-                    className={`todo-item ${props.checked ? "todo-checked" : null}`}
+                    className={`todo-item ${props.checked ? "todo-checked" : ''}`}
                     placeholder="New Todo"
                     id={props.item._id}
                     onChange={props.handleItemChange}
@@ -65,12 +65,12 @@ export default function TodoItem(props) {
             <div>
                 <i className={`material-icons md-18 md-light md-inactive ${showDrag ? null : "hidden"}`}
                     onClick={showMenu}>drag_indicator</i>
-                <i className={`material-icons md-18 ${showClose ? null : "hidden"}`}
+                <i className={`material-icons md-18 ${showClose ? '' : "hidden"}`}
                     onClick={hideClose}>close</i>
                 <div className="item-menu-wrap">
                     <div
                         ref={ref}
-                        className={`item-menu scale-in-br ${showPopup ? null : "hidden"}`}>
+                        className={`item-menu scale-in-br ${showPopup ? '' : "hidden"}`}>
                         <i className="material-icons"
                             onClick={() => props.deleteItem(props.item)}>delete</i>
                         <i className="material-icons"
