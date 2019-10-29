@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import './Styles/animations.css';
 import * as db from './db';
 import TodoItem from './Components/TodoItem';
 import TodoAdd from './Components/TodoAdd'
@@ -40,7 +41,6 @@ function App() {
       if (updateIndex !== -1) {
         newItems[updateIndex] = doc;
         setItems(newItems);
-        return;
       } else {
         newItems.unshift(doc);
         setItems(newItems);
@@ -78,6 +78,8 @@ function App() {
   const handleLocalAdd = (e) => {
     // check if event came from keydown but not enter key => do nothing
     if (e.keyCode && e.keyCode !== 13) return;
+    // if value empty do nothing
+    if (!newItem) return;
     let itemToAdd = {
       _id: new Date().toISOString(),
       todo: newItem,
@@ -126,7 +128,6 @@ function App() {
         // remove from local state
         copyItems.splice(updatedIndex, 1);
         setItems(copyItems);
-        return;
       }).catch(err => "Error removing from DB" + err);
     } else {
       db.updateItem(copyItems[updatedIndex]);
@@ -152,6 +153,20 @@ function App() {
     setNewItem(e.target.value);
   }
 
+  // update state and DB when item checked
+  const handleChecked = (item) => {
+    // debugger
+    let copyItems = [...items];
+    for (let i of copyItems) {
+      if (i === item) {
+        // debugger
+        i.completed = !i.completed;
+        db.updateItem(i);
+      }
+    }
+    setItems(copyItems);
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -167,6 +182,7 @@ function App() {
             handleItemUpdate={handleItemUpdate}
             handleLocalAdd={handleLocalAdd}
             handleItemChange={handleItemChange}
+            handleChecked={handleChecked}
             deleteItem={deleteItem}>
           </TodoItem>
         })}

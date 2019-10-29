@@ -11,13 +11,15 @@ export async function addItem(item) {
 }
 
 export async function deleteItem(item) {
-    item._deleted = true;
-    localDB.put(item);
+    localDB.get(item._id).then((doc) => {
+        doc._deleted = true;
+        return localDB.put(doc);
+    }).catch(err => console.log(`Database Error: ${err}`))
 }
 
 export async function updateItem(item) {
     localDB.get(item._id).then((doc => {
-        if (item.todo === doc.todo) return //item has not changed
+        if (item.todo === doc.todo && item.completed === doc.completed) return //item has not changed
         return localDB.put({
             _id: item._id,
             _rev: doc._rev,

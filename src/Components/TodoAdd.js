@@ -8,13 +8,13 @@ export default function TodoAdd(props) {
                 <input type="text"
                     className="todo-add-btm"
                     value={props.newItem}
-                    placeholder="New Todo"
+                    placeholder="New Item"
                     onChange={props.handleNewChange}
                     onKeyDown={props.handleLocalAdd}>
                 </input>
                 <div className="todo-add-btn"
                     onClick={props.handleLocalAdd}>
-                    <p>Add</p>
+                    <i className="material-icons">add</i>
                 </div>
             </div>
         </div>
