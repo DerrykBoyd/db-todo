@@ -44,6 +44,6 @@
   }
 
   .scale-in-br {
-	-webkit-animation: scale-in-br 0.2s cubic-bezier(0.550, 0.085, 0.680, 0.530) ;
-	        animation: scale-in-br 0.2s cubic-bezier(0.550, 0.085, 0.680, 0.530) ;
+	-webkit-animation: scale-in-br 0.1s cubic-bezier(0.550, 0.085, 0.680, 0.530) ;
+	        animation: scale-in-br 0.1s cubic-bezier(0.550, 0.085, 0.680, 0.530) ;
 }

@@ -37,7 +37,7 @@ input:focus {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  max-width: 400px;
+  max-width: 450px;
   margin: auto;
 }
 
