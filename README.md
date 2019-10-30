@@ -1,4 +1,4 @@
-This is a sycing to-do list web app. Using pouchDB and couchDB this app will instatnly sync between devices.
+This is a sycing to-do list web app, built using React and using pouchDB and couchDB to store user data. This app will instatnly sync between devices.
 
 CouchDB should be running on the default port 5984 on the host machine for syncing to work.
 
