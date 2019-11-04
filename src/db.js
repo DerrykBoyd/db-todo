@@ -1,9 +1,19 @@
 import PouchDB from 'pouchdb';
 
-let localDB = new PouchDB('todo-app');
+let localDB;
 let host = window.location.hostname;
 console.log(host);
-let remoteDB = new PouchDB(`http://${host}:5984/todo-app`);
+let remoteDB;
+
+export async function initLocalDB(userID) {
+    localDB = PouchDB(userID);
+}
+
+export async function initRemoteDB(userID) {
+    if (!userID) return;
+    remoteDB = new PouchDB(`http://${host}:5984/db-${userID}`);
+    await remoteDB.info();
+}
 
 export async function addItem(item) {
     console.log(item);

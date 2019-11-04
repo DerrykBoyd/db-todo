@@ -1,30 +1,73 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
 import * as db from './db';
-import TodoItem from './Components/TodoItem';
-import TodoAdd from './Components/TodoAdd'
+import TodoList from './Components/TodoList';
+import TodoAdd from './Components/TodoAdd';
+import GoogleLogin from 'react-google-login';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  Redirect,
+  useHistory,
+  useLocation
+} from "react-router-dom";
+import { debuggerStatement } from '@babel/types';
+import { func } from 'prop-types';
+
 
 function App() {
 
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("")
+  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || false);
+  const [userID, setUserID] = useState(localStorage.getItem('userID') || '')
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '')
+  const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
+
+  const getData = () => {
+    db.remoteDB.allDocs({ include_docs: true }).then(res => {
+      let fetchedItems = [];
+      res.rows.map(row => fetchedItems.unshift(row.doc));
+      setItems([...fetchedItems]);
+    });
+  }
+
+  // useEffect(() => {
+  //   // set initial items from the remote DB - only runs once
+  //   function getData() {
+  //     db.remoteDB.allDocs({ include_docs: true }).then(res => {
+  //       let fetchedItems = [];
+  //       res.rows.map(row => fetchedItems.unshift(row.doc));
+  //       setItems([...fetchedItems]);
+  //     });
+  //   }
+  //   getData();
+  // }, [])
 
   useEffect(() => {
-    // set initial items from the remote DB - only runs once
-    function getData() {
-      db.remoteDB.allDocs({ include_docs: true }).then(res => {
-        let fetchedItems = [];
-        res.rows.map(row => fetchedItems.unshift(row.doc));
-        setItems([...fetchedItems]);
-      });
+    localStorage.setItem('loggedIn', loggedIn)
+    localStorage.setItem('userID', userID)
+    localStorage.setItem('userEmail', userEmail)
+    localStorage.setItem('userImg', userImg)
+    localStorage.setItem('userName', userName)
+
+    // set initial items after login with userID for DB name
+    if (userID) {
+      db.initLocalDB(userID);
+      db.initRemoteDB(userID).then(getData());
     }
-    getData();
-  }, [])
+
+  }, [loggedIn, userID, userEmail, userImg, userName])
 
   // This effect handles changes to the db from other clients
   useEffect(() => {
+
+    let dbSync;
 
     const handleRemoteDelete = (id) => {
       let newItems = [...items];
@@ -47,33 +90,36 @@ function App() {
       }
     }
 
-    let dbSync = db.localDB.sync(db.remoteDB, {
-      live: true,
-      retry: true,
-      include_docs: true,
-    }).on('change', (e) => {
-      console.log('Database Changed');
-      console.log(e);
-      let itemChanged = e.change.docs[0];
-      if (itemChanged._deleted && e.direction === 'pull') {
-        console.log(`Item deleted: ${itemChanged._id}`)
-        handleRemoteDelete(itemChanged._id);
-      } else if (e.direction === 'pull') {
-        // Handle update or insert
-        handleRemoteUpdate(itemChanged);
-        console.log(`Updataed or Inserted: ${itemChanged._id}`)
-      } else {
-        console.log('This was a local change');
-      }
-    }).on('active', () => {
-      console.log('sync active')
-    }).on('error', () => {
-      console.log('Database Error')
-    });
+    if (loggedIn === 'true') {
+      dbSync = db.localDB.sync(db.remoteDB, {
+        live: true,
+        retry: true,
+        include_docs: true,
+      }).on('change', (e) => {
+        console.log('Database Changed');
+        console.log(e);
+        let itemChanged = e.change.docs[0];
+        if (itemChanged._deleted && e.direction === 'pull') {
+          console.log(`Item deleted: ${itemChanged._id}`)
+          handleRemoteDelete(itemChanged._id);
+        } else if (e.direction === 'pull') {
+          // Handle update or insert
+          handleRemoteUpdate(itemChanged);
+          console.log(`Updataed or Inserted: ${itemChanged._id}`)
+        } else {
+          console.log('This was a local change');
+        }
+      }).on('active', () => {
+        console.log('sync active')
+      }).on('error', () => {
+        console.log('Database Error')
+      });
+    }
+
     return () => {
-      dbSync.cancel();
+      if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items])
+  }, [items, loggedIn])
 
   const handleLocalAdd = (e) => {
     // check if event came from keydown but not enter key => do nothing
@@ -167,32 +213,93 @@ function App() {
     setItems(copyItems);
   }
 
+  const resGoogle = (res) => {
+    setUserID(res.profileObj.googleId);
+    setUserEmail(res.profileObj.email);
+    setUserImg(res.profileObj.imageUrl);
+    setUserName(res.profileObj.name);
+    setLoggedIn("true");
+  }
+
+  const respGoogleFail = (res) => {
+    console.log(res);
+  }
+
+  // A wrapper for <Route> that redirects to the login
+  // screen if you're not yet authenticated.
+  function PrivateRoute({ children, ...rest }) {
+    return (
+      <Route
+        {...rest}
+        render={({ location }) =>
+          loggedIn === 'true' ? (
+            children
+          ) : (
+              <Redirect
+                to={{
+                  pathname: "/login",
+                  state: { from: location }
+                }}
+              />
+            )
+        }
+      />
+    );
+  }
+
+  function PublicRoute({children}) {
+    return loggedIn === "true"
+      ? (<Redirect to="/" />)
+      : (<Route>{children}</Route>)
+  }
+
+  function LoginPage() {
+    return (
+      <div className='App'>
+        <header className="App-header">
+          <img src={logo} className="App-logo" alt="logo" />
+          <h1 className="app-title">DB Todo App</h1>
+        </header>
+        <GoogleLogin
+          clientId="245694344398-gc2fikf31q0d4kcee70nuqj5lhnmu5u7.apps.googleusercontent.com"
+          buttonText="Login"
+          onSuccess={(res) => resGoogle(res)}
+          onFailure={respGoogleFail}
+          cookiePolicy={'single_host_origin'}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <h1 className="app-title">DB Todo App</h1>
-      </header>
-      <section className="todo-items">
-        {items.map(item => {
-          return <TodoItem
-            key={item._id}
-            item={item}
-            checked={item.completed}
-            handleItemUpdate={handleItemUpdate}
-            handleLocalAdd={handleLocalAdd}
-            handleItemChange={handleItemChange}
-            handleChecked={handleChecked}
-            deleteItem={deleteItem}>
-          </TodoItem>
-        })}
-      </section>
-      <TodoAdd
-        newItem={newItem}
-        handleNewChange={handleNewChange}
-        handleLocalAdd={handleLocalAdd}>
-      </TodoAdd>
-    </div>
+    <Router>
+      <Switch>
+        <PublicRoute path='/login'>
+          <LoginPage />
+        </PublicRoute>
+        <PrivateRoute exact path='/'>
+          <div className='App'>
+            <header className="App-header">
+              <img src={logo} className="App-logo" alt="logo" />
+              <h1 className="app-title">DB Todo App</h1>
+            </header>
+            <TodoList
+              items={items}
+              handleItemUpdate={handleItemUpdate}
+              handleLocalAdd={handleLocalAdd}
+              handleItemChange={handleItemChange}
+              handleChecked={handleChecked}
+              deleteItem={deleteItem}>
+            </TodoList>
+            <TodoAdd
+              newItem={newItem}
+              handleNewChange={handleNewChange}
+              handleLocalAdd={handleLocalAdd}>
+            </TodoAdd>
+          </div>
+        </PrivateRoute>
+      </Switch>
+    </Router>
   );
 }
 
