@@ -35,7 +35,7 @@
 
 .profile-menu-wrap {
     position: absolute;
-    transform: translateX(1rem);
+    transform: translateX(1.5rem);
 }
 
 .profile-menu {
@@ -47,6 +47,22 @@
     background-color: #212121;
     position: absolute;
     top: 2.5rem;
+    border-radius: 8px;
+}
+
+.profile-menu:after {
+    bottom: 100%;
+	left: 85%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+	border-color: rgba(33, 33, 33, 0);
+	border-bottom-color: #212121;
+	border-width: 10px;
+	margin-left: -10px;
 }
 
 .logout-btn {

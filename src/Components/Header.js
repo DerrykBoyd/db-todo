@@ -51,7 +51,7 @@ export default function Header(props) {
             <h1 className="app-title">DB Todo App</h1>
             {props.loggedIn === "true" && profile}
             <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
-                <div className="profile-menu" ref={ref}>
+                <div className="profile-menu scale-in-tr" ref={ref}>
                     <button
                         className="logout-btn"
                         value="Logout"
