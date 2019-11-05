@@ -1,22 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
 import * as db from './db';
 import TodoList from './Components/TodoList';
 import TodoAdd from './Components/TodoAdd';
+import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
 import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Link,
   Redirect,
-  useHistory,
-  useLocation
 } from "react-router-dom";
-import { debuggerStatement } from '@babel/types';
-import { func } from 'prop-types';
 
 
 function App() {
@@ -36,18 +32,6 @@ function App() {
       setItems([...fetchedItems]);
     });
   }
-
-  // useEffect(() => {
-  //   // set initial items from the remote DB - only runs once
-  //   function getData() {
-  //     db.remoteDB.allDocs({ include_docs: true }).then(res => {
-  //       let fetchedItems = [];
-  //       res.rows.map(row => fetchedItems.unshift(row.doc));
-  //       setItems([...fetchedItems]);
-  //     });
-  //   }
-  //   getData();
-  // }, [])
 
   useEffect(() => {
     localStorage.setItem('loggedIn', loggedIn)
@@ -225,41 +209,30 @@ function App() {
     console.log(res);
   }
 
-  // A wrapper for <Route> that redirects to the login
-  // screen if you're not yet authenticated.
-  function PrivateRoute({ children, ...rest }) {
-    return (
-      <Route
-        {...rest}
-        render={({ location }) =>
-          loggedIn === 'true' ? (
-            children
-          ) : (
-              <Redirect
-                to={{
-                  pathname: "/login",
-                  state: { from: location }
-                }}
-              />
-            )
-        }
-      />
-    );
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.reload(true);
   }
 
-  function PublicRoute({children}) {
+  // A wrapper for <Route> that redirects to the login
+  // screen if you're not yet authenticated.
+  function PrivateRoute() {
+    return loggedIn !== "true"
+      ? (<Redirect to='/login' />)
+      : (<Route render={() => <AppPage />} />)
+  }
+
+  function PublicRoute() {
     return loggedIn === "true"
       ? (<Redirect to="/" />)
-      : (<Route>{children}</Route>)
+      : (<Route component={LoginPage} />)
   }
 
   function LoginPage() {
     return (
       <div className='App'>
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="app-title">DB Todo App</h1>
-        </header>
+        <Header logo={logo} />
+        <h3>Login with Google</h3>
         <GoogleLogin
           clientId="245694344398-gc2fikf31q0d4kcee70nuqj5lhnmu5u7.apps.googleusercontent.com"
           buttonText="Login"
@@ -271,32 +244,37 @@ function App() {
     );
   }
 
+  function AppPage() {
+    return (
+      <div className='App'>
+        <Header
+          handleLogout={handleLogout}
+          logo={logo}
+          loggedIn={loggedIn}
+          userImg={userImg} />
+        <TodoList
+          items={items}
+          handleItemUpdate={handleItemUpdate}
+          handleLocalAdd={handleLocalAdd}
+          handleItemChange={handleItemChange}
+          handleChecked={handleChecked}
+          deleteItem={deleteItem}>
+        </TodoList>
+        <TodoAdd
+          newItem={newItem}
+          handleNewChange={handleNewChange}
+          handleLocalAdd={handleLocalAdd}>
+        </TodoAdd>
+      </div >
+    )
+  }
+
   return (
     <Router>
       <Switch>
         <PublicRoute path='/login'>
-          <LoginPage />
         </PublicRoute>
         <PrivateRoute exact path='/'>
-          <div className='App'>
-            <header className="App-header">
-              <img src={logo} className="App-logo" alt="logo" />
-              <h1 className="app-title">DB Todo App</h1>
-            </header>
-            <TodoList
-              items={items}
-              handleItemUpdate={handleItemUpdate}
-              handleLocalAdd={handleLocalAdd}
-              handleItemChange={handleItemChange}
-              handleChecked={handleChecked}
-              deleteItem={deleteItem}>
-            </TodoList>
-            <TodoAdd
-              newItem={newItem}
-              handleNewChange={handleNewChange}
-              handleLocalAdd={handleLocalAdd}>
-            </TodoAdd>
-          </div>
         </PrivateRoute>
       </Switch>
     </Router>
