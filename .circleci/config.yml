@@ -1,4 +1,4 @@
-version: 2.1 # use CircleCI 2.1
+version: 2
 jobs: # a collection of steps
   build: # runs not using Workflows must have a `build` job as entry point
     working_directory: ~/db-todo
@@ -41,6 +41,7 @@ jobs: # a collection of steps
       - run:
           name: Deploy Over SSH
           command: |
+            ls -a ~/db-todo/build/
             scp -r ~/db-todo/build/* root@159.203.59.1:/var/www/db-todo
 
 workflows:
