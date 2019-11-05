@@ -22,6 +22,10 @@ input:focus {
   margin: auto;
 }
 
+.hidden {
+  display: none;
+}
+
 /* Styling for material design icons */
 /* Rules for sizing the icon. */
 .material-icons.md-18 { font-size: 18px; }

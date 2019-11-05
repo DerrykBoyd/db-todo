@@ -7,12 +7,6 @@ import TodoList from './Components/TodoList';
 import TodoAdd from './Components/TodoAdd';
 import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect,
-} from "react-router-dom";
 
 
 function App() {
@@ -214,23 +208,9 @@ function App() {
     window.location.reload(true);
   }
 
-  // A wrapper for <Route> that redirects to the login
-  // screen if you're not yet authenticated.
-  function PrivateRoute() {
-    return loggedIn !== "true"
-      ? (<Redirect to='/login' />)
-      : (<Route render={() => <AppPage />} />)
-  }
-
-  function PublicRoute() {
-    return loggedIn === "true"
-      ? (<Redirect to="/" />)
-      : (<Route component={LoginPage} />)
-  }
-
-  function LoginPage() {
-    return (
-      <div className='App'>
+  return (
+    <div>
+      <div className={`App Login ${loggedIn ? 'hidden' : ''}`}>
         <Header logo={logo} />
         <h3>Login with Google</h3>
         <GoogleLogin
@@ -241,12 +221,7 @@ function App() {
           cookiePolicy={'single_host_origin'}
         />
       </div>
-    );
-  }
-
-  function AppPage() {
-    return (
-      <div className='App'>
+      <div className={`App ${loggedIn ? '' : 'hidden'}`}>
         <Header
           handleLogout={handleLogout}
           logo={logo}
@@ -265,20 +240,9 @@ function App() {
           handleNewChange={handleNewChange}
           handleLocalAdd={handleLocalAdd}>
         </TodoAdd>
-      </div >
-    )
-  }
-
-  return (
-    <Router>
-      <Switch>
-        <PublicRoute path='/login'>
-        </PublicRoute>
-        <PrivateRoute exact path='/'>
-        </PrivateRoute>
-      </Switch>
-    </Router>
-  );
+      </div>
+    </div>
+  )
 }
 
 export default App;
