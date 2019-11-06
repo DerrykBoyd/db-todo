@@ -42,7 +42,7 @@ jobs: # a collection of steps
           name: Deploy Over SSH
           command: |
             ssh root@159.203.59.1 "ls -a && cd /root/projects/db-todo/ && 
-              checkout master && git pull && npm install && npm run build &&
+              git checkout master && git pull && npm install && npm run build &&
               rsync -rvh ./build/ /var/www/db-todo/"
 workflows:
   version: 2
