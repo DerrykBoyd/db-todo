@@ -6,7 +6,6 @@ set +x
 
 # update npm packages
 npm install
-npm install forever -g
 
 # build production site
 npm run build
@@ -15,4 +14,4 @@ npm run build
 rsync -rvh ./build/ /var/www/db-todo/
 
 # start API server
-forever start ./src/server.js
+forever restartall

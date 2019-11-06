@@ -13,7 +13,7 @@ function App() {
 
   const API_URL = process.env.NODE_ENV === 'development' ?
     'http://localhost:4000/' :
-    'http://159.203.59.1:4000'; // Update when API set up properly
+    'https://db-todo.duckdns.org/api/';
 
   const DB_HOST = process.env.NODE_ENV === 'development' ?
     'http://localhost:5984/' :
