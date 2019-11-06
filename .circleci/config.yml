@@ -22,18 +22,9 @@ jobs: # a collection of steps
       - run: # run tests
           name: test
           command: npm test
-      - run: #run build
-          name: build
-          command: npm run build
-      - store_artifacts: # special step to save test results as as artifact
-          # Upload test summary for display in Artifacts: https://circleci.com/docs/2.0/artifacts/ 
-          path: test-results.xml
-          prefix: tests
-      - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/ 
-          path: coverage
-          prefix: coverage
-      - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-          path: test-results.xml
+      # - run: #run build
+      #     name: build
+      #     command: npm run build
   deploy:
     machine:
       enabled: true
@@ -41,7 +32,7 @@ jobs: # a collection of steps
       - run:
           name: Deploy Over SSH
           command: |
-            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && pwd && ./build-install.sh"
+            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git checkout master && git pull && ./build-install.sh"
 workflows:
   version: 2
   build-and-deploy:
