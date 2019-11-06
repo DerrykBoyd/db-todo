@@ -6,6 +6,7 @@ set +x
 
 # update npm packages
 npm install
+npm install forever -g
 
 # build production site
 npm run build
