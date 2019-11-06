@@ -13,7 +13,7 @@ function App() {
 
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("")
-  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || false);
+  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
   const [userID, setUserID] = useState(localStorage.getItem('userID') || '')
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '')
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
@@ -210,7 +210,7 @@ function App() {
 
   return (
     <div>
-      <div className={`App Login ${loggedIn ? 'hidden' : ''}`}>
+      <div className={`App Login ${loggedIn==="true" ? 'hidden' : ''}`}>
         <Header logo={logo} />
         <h3>Login with Google</h3>
         <GoogleLogin
@@ -221,7 +221,7 @@ function App() {
           cookiePolicy={'single_host_origin'}
         />
       </div>
-      <div className={`App ${loggedIn ? '' : 'hidden'}`}>
+      <div className={`App ${loggedIn === "true" ? '' : 'hidden'}`}>
         <Header
           handleLogout={handleLogout}
           logo={logo}
