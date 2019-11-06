@@ -7,11 +7,11 @@ set +x
 # update npm packages
 npm install
 
-# start API service
-node ./src/server.js
-
 # build production site
 npm run build
 
 # copy files to server location
 rsync -rvh ./build/ /var/www/db-todo/
+
+# start API server
+forever start ./src/server.js
