@@ -1,16 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
-import * as db from './db';
+import PouchDB from 'pouchdb';
 import TodoList from './Components/TodoList';
 import TodoAdd from './Components/TodoAdd';
 import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
-
+import axios from 'axios';
 
 function App() {
 
+  const API_URL = process.env.NODE_ENV === 'development' ?
+    'http://localhost:4000/' :
+    'http://159.203.59.1:4000'; // Update when API set up properly
+
+  const DB_HOST = process.env.NODE_ENV === 'development' ?
+    'http://localhost:5984/' :
+    'https://db-todo.duckdns.org/db/';
+
+  const [localDB, setLocalDB] = useState(null);
+  const [remoteDB, setRemoteDB] = useState(null);
+  const [loadingDB, setLoadingDB] = useState(true);
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("")
   const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
@@ -19,13 +30,45 @@ function App() {
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
 
-  const getData = () => {
-    db.remoteDB.allDocs({ include_docs: true }).then(res => {
-      let fetchedItems = [];
-      res.rows.map(row => fetchedItems.unshift(row.doc));
-      setItems([...fetchedItems]);
-    });
-  }
+  const getData = useCallback(
+    () => {
+      if (!remoteDB) return;
+      remoteDB.allDocs({ include_docs: true }).then(res => {
+        let fetchedItems = [];
+        res.rows.map(row => fetchedItems.unshift(row.doc));
+        setItems([...fetchedItems]);
+        setLoadingDB(false);
+      });
+    },
+    [remoteDB],
+  )
+
+  useEffect(
+    () => {
+      setLocalDB(new PouchDB(userID))
+    },
+    [userID],
+  )
+
+  useEffect(
+    () => {
+      if (!userID) return;
+      axios.get(API_URL).then(res => {
+        console.log(res.data.test)
+        setRemoteDB(new PouchDB(`${DB_HOST}db-${userID}`));
+      });
+    },
+    [DB_HOST, userID],
+  )
+
+  useEffect(
+    () => {
+      if (!remoteDB) return;
+      remoteDB.info();
+      getData();
+    },
+    [remoteDB, getData],
+  )
 
   useEffect(() => {
     localStorage.setItem('loggedIn', loggedIn)
@@ -34,16 +77,12 @@ function App() {
     localStorage.setItem('userImg', userImg)
     localStorage.setItem('userName', userName)
 
-    // set initial items after login with userID for DB name
-    if (userID) {
-      db.initLocalDB(userID);
-      db.initRemoteDB(userID).then(getData());
-    }
-
   }, [loggedIn, userID, userEmail, userImg, userName])
 
   // This effect handles changes to the db from other clients
   useEffect(() => {
+
+    if (loadingDB) return;
 
     let dbSync;
 
@@ -68,8 +107,8 @@ function App() {
       }
     }
 
-    if (loggedIn === 'true') {
-      dbSync = db.localDB.sync(db.remoteDB, {
+    if (loggedIn === 'true' && remoteDB) {
+      dbSync = localDB.sync(remoteDB, {
         live: true,
         retry: true,
         include_docs: true,
@@ -97,7 +136,12 @@ function App() {
     return () => {
       if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items, loggedIn])
+  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB])
+
+  async function addItem(item) {
+    console.log(item);
+    localDB.put(item)
+  }
 
   const handleLocalAdd = (e) => {
     // check if event came from keydown but not enter key => do nothing
@@ -109,7 +153,7 @@ function App() {
       todo: newItem,
       completed: false,
     }
-    db.addItem(itemToAdd)
+    addItem(itemToAdd)
     setItems([itemToAdd, ...items]);
     window.scrollTo({
       top: 0,
@@ -128,15 +172,34 @@ function App() {
     setItems(newItems);
   }
 
+  async function deleteDBItem(item) {
+    localDB.get(item._id).then((doc) => {
+      doc._deleted = true;
+      return localDB.put(doc);
+    }).catch(err => console.log(`Database Error: ${err}`))
+  }
+
   // delete item from delete button
   const deleteItem = (item) => {
-    db.deleteItem(item).then(() => {
+    deleteDBItem(item).then(() => {
       // remove from local state
       let copyItems = [...items];
       let delInd = copyItems.findIndex(el => el._id === item._id);
       copyItems.splice(delInd, 1);
       setItems(copyItems);
     })
+  }
+
+  async function updateItem(item) {
+    localDB.get(item._id).then((doc => {
+      if (item.todo === doc.todo && item.completed === doc.completed) return //item has not changed
+      return localDB.put({
+        _id: item._id,
+        _rev: doc._rev,
+        todo: item.todo,
+        completed: item.completed,
+      })
+    }))
   }
 
   // send updated items to DB
@@ -148,13 +211,13 @@ function App() {
     // check if deleted and process
     if (e.keyCode === 8 && !e.target.value) {
       // delete item from DB
-      db.deleteItem(copyItems[updatedIndex]).then(() => {
+      deleteDBItem(copyItems[updatedIndex]).then(() => {
         // remove from local state
         copyItems.splice(updatedIndex, 1);
         setItems(copyItems);
       }).catch(err => "Error removing from DB" + err);
     } else {
-      db.updateItem(copyItems[updatedIndex]);
+      updateItem(copyItems[updatedIndex]);
     }
     // check if enter and add new blank todo below
     // COME BACK TO THIS WHEN DOING SORTABLE
@@ -185,7 +248,7 @@ function App() {
       if (i === item) {
         // debugger
         i.completed = !i.completed;
-        db.updateItem(i);
+        updateItem(i);
       }
     }
     setItems(copyItems);
@@ -210,7 +273,7 @@ function App() {
 
   return (
     <div>
-      <div className={`App Login ${loggedIn==="true" ? 'hidden' : ''}`}>
+      <div className={`App Login ${loggedIn === "true" ? 'hidden' : ''}`}>
         <Header logo={logo} />
         <h3>Login with Google</h3>
         <GoogleLogin

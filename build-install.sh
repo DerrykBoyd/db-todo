@@ -7,6 +7,9 @@ set +x
 # update npm packages
 npm install
 
+# start API service
+node ./src/server.js
+
 # build production site
 npm run build
 
