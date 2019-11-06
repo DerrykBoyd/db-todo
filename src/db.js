@@ -1,9 +1,11 @@
 import PouchDB from 'pouchdb';
 
 let localDB;
-let host = window.location.hostname;
-console.log(host);
 let remoteDB;
+
+let dbHost = process.env.NODE_ENV === 'development' ?
+    'http://localhost:5984' :
+    'https://db-todo.duckdns.org/db/';
 
 export async function initLocalDB(userID) {
     localDB = PouchDB(userID);
@@ -11,7 +13,7 @@ export async function initLocalDB(userID) {
 
 export async function initRemoteDB(userID) {
     if (!userID) return;
-    remoteDB = new PouchDB(`http://${host}:5984/db-${userID}`);
+    remoteDB = new PouchDB(`${dbHost}/db-${userID}`);
     await remoteDB.info();
 }
 
