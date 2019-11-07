@@ -12,12 +12,12 @@ import axios from 'axios';
 function App() {
 
   const API_URL = process.env.NODE_ENV === 'development' ?
-    'http://localhost:4000/' :
-    'https://db-todo.duckdns.org/api/';
+    'http://localhost:4000' :
+    'https://db-todo.duckdns.org/api';
 
   const DB_HOST = process.env.NODE_ENV === 'development' ?
-    'http://localhost:5984/' :
-    'https://db-todo.duckdns.org/db/';
+    'http://localhost:5984' :
+    'https://db-todo.duckdns.org/db';
 
   const [localDB, setLocalDB] = useState(null);
   const [remoteDB, setRemoteDB] = useState(null);
@@ -50,15 +50,24 @@ function App() {
     [userID],
   )
 
+  // check if remote DB exists and create if not
   useEffect(
     () => {
       if (!userID) return;
-      axios.get(API_URL).then(res => {
-        console.log(res.data.test)
-        setRemoteDB(new PouchDB(`${DB_HOST}db-${userID}`));
+      axios.head(`${DB_HOST}/db-${userID}`).then(res => {
+        if (res.statusText === 'OK') {
+          console.log('DB Exists')
+          setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
+        };
+      }).catch(err => {
+        console.log(err);
+        axios.put(`${API_URL}/db/db-${userID}`).then(res => {
+          console.log(res)
+          setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
+        });
       });
     },
-    [DB_HOST, userID],
+    [DB_HOST, API_URL, userID],
   )
 
   useEffect(
