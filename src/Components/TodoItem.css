@@ -69,6 +69,14 @@
   display: none;
 }
 
+.handle {
+  padding-left: 10px;
+}
+
+.overflow-icons {
+  display: flex;
+}
+
 /* pointer on icon hovers */
 i {
   cursor: pointer;

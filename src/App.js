@@ -8,6 +8,7 @@ import TodoAdd from './Components/TodoAdd';
 import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
 import axios from 'axios';
+import Sortable from 'sortablejs';
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
   const [items, setItems] = useState([]);
+  const [sortOrder, setSortOrder] = useState([]);
   const [newItem, setNewItem] = useState("")
   const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
   const [userID, setUserID] = useState(localStorage.getItem('userID') || '')
@@ -35,7 +37,13 @@ function App() {
       if (!remoteDB) return;
       remoteDB.allDocs({ include_docs: true }).then(res => {
         let fetchedItems = [];
-        res.rows.map(row => fetchedItems.unshift(row.doc));
+        res.rows.filter(row => {
+          if (row.doc.order) {
+            setSortOrder(row.doc.order)
+            return false;
+          }
+          return true;
+        }).map(row => fetchedItems.unshift(row.doc));
         setItems([...fetchedItems]);
         setLoadingDB(false);
       });
@@ -116,6 +124,29 @@ function App() {
       }
     }
 
+    const handleSortChange = (doc) => {
+      setSortOrder(doc.order)
+    }
+
+    // create sortable list for todo items
+    let el = document.getElementById('todo-items');
+    Sortable.create(el, {
+      handle: '.handle', // handle's class
+      animation: 150,
+      store: {
+        get: function(sortable) {
+          return sortOrder ? sortOrder : [];
+        },
+        set: function(sortable) {
+          //setSortOrder(sortable.toArray());
+          localDB.get("sort-order").then( doc => {
+            doc.order = sortable.toArray();
+            return localDB.put(doc);
+          })
+        }
+      }
+    });
+
     if (loggedIn === 'true' && remoteDB) {
       dbSync = localDB.sync(remoteDB, {
         live: true,
@@ -128,6 +159,8 @@ function App() {
         if (itemChanged._deleted && e.direction === 'pull') {
           console.log(`Item deleted: ${itemChanged._id}`)
           handleRemoteDelete(itemChanged._id);
+        } else if (itemChanged.order) {
+          handleSortChange(itemChanged)
         } else if (e.direction === 'pull') {
           // Handle update or insert
           handleRemoteUpdate(itemChanged);
@@ -145,7 +178,7 @@ function App() {
     return () => {
       if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB])
+  }, [items, sortOrder, loggedIn, userID, localDB, remoteDB, loadingDB])
 
   async function addItem(item) {
     console.log(item);
@@ -301,6 +334,7 @@ function App() {
           userImg={userImg} />
         <TodoList
           items={items}
+          setItems={setItems}
           handleItemUpdate={handleItemUpdate}
           handleLocalAdd={handleLocalAdd}
           handleItemChange={handleItemChange}

@@ -48,7 +48,7 @@ export default function TodoItem(props) {
     })
 
     return (
-        <div className="todo-item-wrapper">
+        <div className="todo-item-wrapper" data-id={props.item._id}>
             <i  onClick={toggleChecked}
                 className={`material-icons ${props.checked ? "hidden" : ''}`}>check_box_outline_blank</i>
             <i  onClick={toggleChecked} 
@@ -62,11 +62,12 @@ export default function TodoItem(props) {
                     onBlur={props.handleItemUpdate}
                     value={props.item.todo}>
             </input>
-            <div>
+            <div className='overflow-icons'>
                 <i className={`material-icons md-18 md-light md-inactive ${showDrag ? null : "hidden"}`}
-                    onClick={showMenu}>drag_indicator</i>
+                    onClick={showMenu}>more_vert</i>
                 <i className={`material-icons md-18 ${showClose ? '' : "hidden"}`}
                     onClick={hideClose}>close</i>
+                
                 <div className="item-menu-wrap">
                     <div
                         ref={ref}
@@ -78,6 +79,8 @@ export default function TodoItem(props) {
                     </div>
                 </div>
             </div>
+            <i className={`material-icons md-light md-inactive handle`}
+                    >drag_handle</i>
         </div>
     );
 };
