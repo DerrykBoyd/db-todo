@@ -142,7 +142,7 @@ function App() {
           localDB.get("sort-order").catch(err => {
             if(err.name === 'not_found') {
               return {
-                _id: 'order',
+                _id: 'sort-order',
                 order: sortable.toArray()
               }
             }
