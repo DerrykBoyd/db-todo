@@ -58,6 +58,42 @@ function App() {
     [userID],
   )
 
+  // move sortable functionality into own effect to try and fix rerender problems
+  useEffect(
+    () => {
+      if (!localDB) return;
+      if (loadingDB) return;
+      // create sortable list for todo items
+      let el = document.getElementById('todo-items');
+      new Sortable(el, {
+        handle: '.handle', // handle's class
+        animation: 150,
+        store: {
+          get: function (sortable) {
+            return sortOrder ? sortOrder : [];
+          },
+          set: function (sortable) {
+            localDB.get("sort-order").catch(err => {
+              if (err.name === 'not_found') {
+                return {
+                  _id: 'sort-order',
+                  order: sortOrder
+                }
+              }
+            }).then(doc => {
+              let newOrder = sortable.toArray();
+              setSortOrder(newOrder)
+              doc.order = newOrder;
+              return localDB.put(doc);
+            })
+          }
+        }
+      });
+
+    },
+    [localDB, sortOrder, loadingDB],
+  )
+
   // check if remote DB exists and create if not
   useEffect(
     () => {
@@ -128,32 +164,6 @@ function App() {
       setSortOrder(doc.order)
     }
 
-    // create sortable list for todo items
-    let el = document.getElementById('todo-items');
-    Sortable.create(el, {
-      handle: '.handle', // handle's class
-      animation: 150,
-      store: {
-        get: function(sortable) {
-          return sortOrder ? sortOrder : [];
-        },
-        set: function(sortable) {
-          //setSortOrder(sortable.toArray());
-          localDB.get("sort-order").catch(err => {
-            if(err.name === 'not_found') {
-              return {
-                _id: 'sort-order',
-                order: sortable.toArray()
-              }
-            }
-          }).then( doc => {
-            doc.order = sortable.toArray();
-            return localDB.put(doc);
-          })
-        }
-      }
-    });
-
     if (loggedIn === 'true' && remoteDB) {
       dbSync = localDB.sync(remoteDB, {
         live: true,
@@ -166,7 +176,7 @@ function App() {
         if (itemChanged._deleted && e.direction === 'pull') {
           console.log(`Item deleted: ${itemChanged._id}`)
           handleRemoteDelete(itemChanged._id);
-        } else if (itemChanged.order) {
+        } else if (itemChanged.order && e.direction === 'pull') {
           handleSortChange(itemChanged)
         } else if (e.direction === 'pull') {
           // Handle update or insert
