@@ -139,7 +139,14 @@ function App() {
         },
         set: function(sortable) {
           //setSortOrder(sortable.toArray());
-          localDB.get("sort-order").then( doc => {
+          localDB.get("sort-order").catch(err => {
+            if(err.name === 'not_found') {
+              return {
+                _id: 'order',
+                order: sortable.toArray()
+              }
+            }
+          }).then( doc => {
             doc.order = sortable.toArray();
             return localDB.put(doc);
           })
