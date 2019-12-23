@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
@@ -19,7 +19,7 @@ function App() {
     'http://localhost:5984' :
     'https://db-todo.duckdns.org/db';
 
-  const [localDB, setLocalDB] = useState(new PouchDB(localStorage.getItem('userID') || null));
+//const [localDB, setLocalDB] = useState(null);
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
   const [items, setItems] = useState([]);
@@ -30,6 +30,8 @@ function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '')
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
+
+  const localDB = useRef(new PouchDB(localStorage.getItem('userID')) || null);
 
   const getData = useCallback(
     () => {
@@ -52,7 +54,7 @@ function App() {
 
   useEffect(
     () => {
-      setLocalDB(new PouchDB(userID))
+      localDB.current = new PouchDB(userID)
     },
     [userID],
   )
@@ -123,8 +125,8 @@ function App() {
       }
     }
 
-    if (loggedIn === 'true' && remoteDB) {
-      dbSync = localDB.sync(remoteDB, {
+    if (loggedIn === 'true' && remoteDB && localDB.current) {
+      dbSync = localDB.current.sync(remoteDB, {
         live: true,
         retry: true,
         include_docs: true,
@@ -158,7 +160,7 @@ function App() {
 
   async function addItem(item) {
     console.log(item);
-    localDB.put(item)
+    localDB.current.put(item)
   }
 
   const handleLocalAdd = (e) => {
@@ -191,9 +193,9 @@ function App() {
   }
 
   async function deleteDBItem(item) {
-    localDB.get(item._id).then((doc) => {
+    localDB.current.get(item._id).then((doc) => {
       doc._deleted = true;
-      return localDB.put(doc);
+      return localDB.current.put(doc);
     }).catch(err => console.log(`Database Error: ${err}`))
   }
 
@@ -209,10 +211,10 @@ function App() {
   }
 
   async function updateItem(item) {
-    if (!localDB) return // no local DB
-    localDB.get(item._id).then((doc => {
+    if (!localDB.current) return // no local DB
+    localDB.current.get(item._id).then((doc => {
       if (item.todo === doc.todo && item.completed === doc.completed) return //item has not changed
-      return localDB.put({
+      return localDB.current.put({
         _id: item._id,
         _rev: doc._rev,
         todo: item.todo,
@@ -225,8 +227,8 @@ function App() {
       // debugger
       if (order === sortOrder) return; //sort order has not changed
       setSortOrder(order);
-      localDB.get('sort-order').then((doc => {
-        return localDB.put({
+      localDB.current.get('sort-order').then((doc => {
+        return localDB.current.put({
           _id: 'sort-order',
           _rev: doc._rev,
           order: order
