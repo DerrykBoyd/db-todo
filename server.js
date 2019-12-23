@@ -23,7 +23,7 @@ let dbAuth64 = buff.toString('base64');
 console.log(dbAuth64);
 
 // Route for creating a new DB if none existing
-app.put('/:dbName', (req, res) => {
+app.put('/db/:dbName', (req, res) => {
 
     let dbName = req.params.dbName;
 

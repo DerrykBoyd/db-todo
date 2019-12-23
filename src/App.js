@@ -12,7 +12,7 @@ import axios from 'axios';
 function App() {
 
   const API_URL = process.env.NODE_ENV === 'development' ?
-    'http://localhost:4000' :
+    'http://localhost:4000/db' :
     'https://db-todo.duckdns.org/api';
 
   const DB_HOST = process.env.NODE_ENV === 'development' ?
