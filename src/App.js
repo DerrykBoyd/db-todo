@@ -8,7 +8,6 @@ import TodoAdd from './Components/TodoAdd';
 import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
 import axios from 'axios';
-import Sortable from 'sortablejs';
 
 function App() {
 
@@ -20,7 +19,7 @@ function App() {
     'http://localhost:5984' :
     'https://db-todo.duckdns.org/db';
 
-  const [localDB, setLocalDB] = useState(null);
+  const [localDB, setLocalDB] = useState(new PouchDB(localStorage.getItem('userID') || null));
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
   const [items, setItems] = useState([]);
@@ -56,42 +55,6 @@ function App() {
       setLocalDB(new PouchDB(userID))
     },
     [userID],
-  )
-
-  // move sortable functionality into own effect to try and fix rerender problems
-  useEffect(
-    () => {
-      if (!localDB) return;
-      if (loadingDB) return;
-      // create sortable list for todo items
-      let el = document.getElementById('todo-items');
-      new Sortable(el, {
-        handle: '.handle', // handle's class
-        animation: 150,
-        store: {
-          get: function (sortable) {
-            return sortOrder ? sortOrder : [];
-          },
-          set: function (sortable) {
-            localDB.get("sort-order").catch(err => {
-              if (err.name === 'not_found') {
-                return {
-                  _id: 'sort-order',
-                  order: sortOrder
-                }
-              }
-            }).then(doc => {
-              let newOrder = sortable.toArray();
-              setSortOrder(newOrder)
-              doc.order = newOrder;
-              return localDB.put(doc);
-            })
-          }
-        }
-      });
-
-    },
-    [localDB, sortOrder, loadingDB],
   )
 
   // check if remote DB exists and create if not
@@ -160,10 +123,6 @@ function App() {
       }
     }
 
-    const handleSortChange = (doc) => {
-      setSortOrder(doc.order)
-    }
-
     if (loggedIn === 'true' && remoteDB) {
       dbSync = localDB.sync(remoteDB, {
         live: true,
@@ -177,7 +136,7 @@ function App() {
           console.log(`Item deleted: ${itemChanged._id}`)
           handleRemoteDelete(itemChanged._id);
         } else if (itemChanged.order && e.direction === 'pull') {
-          handleSortChange(itemChanged)
+          setSortOrder(itemChanged.order)
         } else if (e.direction === 'pull') {
           // Handle update or insert
           handleRemoteUpdate(itemChanged);
@@ -250,6 +209,7 @@ function App() {
   }
 
   async function updateItem(item) {
+    if (!localDB) return // no local DB
     localDB.get(item._id).then((doc => {
       if (item.todo === doc.todo && item.completed === doc.completed) return //item has not changed
       return localDB.put({
@@ -259,6 +219,19 @@ function App() {
         completed: item.completed,
       })
     }))
+  }
+
+  async function updateOrder(order) {
+      // debugger
+      if (order === sortOrder) return; //sort order has not changed
+      setSortOrder(order);
+      localDB.get('sort-order').then((doc => {
+        return localDB.put({
+          _id: 'sort-order',
+          _rev: doc._rev,
+          order: order
+        })
+      }))
   }
 
   // send updated items to DB
@@ -352,6 +325,8 @@ function App() {
         <TodoList
           items={items}
           setItems={setItems}
+          order={sortOrder}
+          setOrder={updateOrder}
           handleItemUpdate={handleItemUpdate}
           handleLocalAdd={handleLocalAdd}
           handleItemChange={handleItemChange}
