@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
 import './TodoItem.css';
+import {sortableHandle} from 'react-sortable-hoc';
 
 export default function TodoItem(props) {
 
@@ -40,6 +41,11 @@ export default function TodoItem(props) {
         }
     }
 
+    const DragHandle = sortableHandle(() => (
+        <i className={`material-icons md-light md-inactive handle`}
+                    >drag_handle</i>
+    ))
+
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
@@ -79,8 +85,7 @@ export default function TodoItem(props) {
                     </div>
                 </div>
             </div>
-            <i className={`material-icons md-light md-inactive handle`}
-                    >drag_handle</i>
+            <DragHandle />
         </div>
     );
 };

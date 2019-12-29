@@ -272,6 +272,7 @@ function App() {
         <TodoList
           items={items}
           setItems={setItems}
+          updateItems={updateItems}
           handleItemUpdate={handleItemUpdate}
           handleLocalAdd={handleLocalAdd}
           handleItemChange={handleItemChange}
