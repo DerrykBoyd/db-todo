@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
@@ -19,11 +19,11 @@ function App() {
     'http://localhost:5984' :
     'https://db-todo.duckdns.org/db';
 
-//const [localDB, setLocalDB] = useState(null);
+  const [localDB, setLocalDB] = useState(null);
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
+  const [currentList, setCurrentList] = useState('default');
   const [items, setItems] = useState([]);
-  const [sortOrder, setSortOrder] = useState([]);
   const [newItem, setNewItem] = useState("")
   const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
   const [userID, setUserID] = useState(localStorage.getItem('userID') || '')
@@ -31,70 +31,52 @@ function App() {
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
 
-  const localDB = useRef(new PouchDB(localStorage.getItem('userID')) || null);
+  // get data from the DB on load
+  const getData = useCallback(() => {
+    if (!remoteDB) return;
+    remoteDB.allDocs({ include_docs: true }).then(res => {
+      let filteredRes = res.rows.filter(row => row.doc.listName === currentList);
+      if (filteredRes.length) setItems(filteredRes[0].doc.todoItems);
+      setLoadingDB(false);
+    });
+  }, [remoteDB, currentList])
 
-  const getData = useCallback(
-    () => {
-      if (!remoteDB) return;
-      remoteDB.allDocs({ include_docs: true }).then(res => {
-        let fetchedItems = [];
-        res.rows.filter(row => {
-          if (row.doc.order) {
-            setSortOrder(row.doc.order)
-            return false;
-          }
-          return true;
-        }).map(row => fetchedItems.unshift(row.doc));
-        setItems([...fetchedItems]);
-        setLoadingDB(false);
-      });
-    },
-    [remoteDB],
-  )
-
-  useEffect(
-    () => {
-      localDB.current = new PouchDB(userID)
-    },
-    [userID],
-  )
+  // set up local DB for each user
+  useEffect(() => {
+    setLocalDB(new PouchDB(userID))
+  }, [userID])
 
   // check if remote DB exists and create if not
-  useEffect(
-    () => {
-      if (!userID) return;
-      axios.head(`${DB_HOST}/db-${userID}`).then(res => {
-        if (res.statusText === 'OK') {
-          console.log('DB Exists')
-          setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
-        };
-      }).catch(err => {
-        console.log(err);
-        axios.put(`${API_URL}/db-${userID}`).then(res => {
-          console.log(res)
-          setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
-        });
+  useEffect(() => {
+    if (!userID) return;
+    axios.head(`${DB_HOST}/db-${userID}`).then(res => {
+      if (res.statusText === 'OK') {
+        console.log('DB Exists')
+        setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
+      };
+    }).catch(err => {
+      console.log(err);
+      axios.put(`${API_URL}/db-${userID}`).then(res => {
+        console.log(res)
+        setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
       });
-    },
-    [DB_HOST, API_URL, userID],
-  )
+    });
+  }, [DB_HOST, API_URL, userID])
 
-  useEffect(
-    () => {
-      if (!remoteDB) return;
-      remoteDB.info();
-      getData();
-    },
-    [remoteDB, getData],
-  )
+  // get data from the DB when ready
+  useEffect(() => {
+    if (!remoteDB) return;
+    remoteDB.info();
+    getData();
+  }, [remoteDB, getData])
 
+  // This effect handles logins
   useEffect(() => {
     localStorage.setItem('loggedIn', loggedIn)
     localStorage.setItem('userID', userID)
     localStorage.setItem('userEmail', userEmail)
     localStorage.setItem('userImg', userImg)
     localStorage.setItem('userName', userName)
-
   }, [loggedIn, userID, userEmail, userImg, userName])
 
   // This effect handles changes to the db from other clients
@@ -104,45 +86,25 @@ function App() {
 
     let dbSync;
 
-    const handleRemoteDelete = (id) => {
+    const handleRemoteUpdate = (list) => {
       let newItems = [...items];
-      let delIndex = newItems.findIndex(el => el._id === id);
-      if (delIndex === -1) return;
-      newItems.splice(delIndex, 1);
+      newItems = list.todoItems;
       setItems(newItems);
-      console.log(`Deleted: ${id}`);
     }
 
-    const handleRemoteUpdate = (doc) => {
-      let newItems = [...items];
-      let updateIndex = newItems.findIndex(el => el._id === doc._id);
-      if (updateIndex !== -1) {
-        newItems[updateIndex] = doc;
-        setItems(newItems);
-      } else {
-        newItems.unshift(doc);
-        setItems(newItems);
-      }
-    }
-
-    if (loggedIn === 'true' && remoteDB && localDB.current) {
-      dbSync = localDB.current.sync(remoteDB, {
+    if (loggedIn === 'true' && remoteDB && localDB) {
+      dbSync = localDB.sync(remoteDB, {
         live: true,
         retry: true,
         include_docs: true,
       }).on('change', (e) => {
         console.log('Database Changed');
         console.log(e);
-        let itemChanged = e.change.docs[0];
-        if (itemChanged._deleted && e.direction === 'pull') {
-          console.log(`Item deleted: ${itemChanged._id}`)
-          handleRemoteDelete(itemChanged._id);
-        } else if (itemChanged.order && e.direction === 'pull') {
-          setSortOrder(itemChanged.order)
-        } else if (e.direction === 'pull') {
+        let listChanged = e.change.docs[0];
+        if (e.direction === 'pull') {
           // Handle update or insert
-          handleRemoteUpdate(itemChanged);
-          console.log(`Updataed or Inserted: ${itemChanged._id}`)
+          handleRemoteUpdate(listChanged);
+          console.log(`Updataed: ${listChanged._id}`)
         } else {
           console.log('This was a local change');
         }
@@ -156,11 +118,30 @@ function App() {
     return () => {
       if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items, sortOrder, loggedIn, userID, localDB, remoteDB, loadingDB])
+  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB])
 
   async function addItem(item) {
     console.log(item);
-    localDB.current.put(item)
+    // get all lists from the DB and update current list
+    // make new list if current list does not exist
+    localDB.allDocs({ include_docs: true }).then(res => {
+      // TODO figure out how to use the list ID as the currentList var and not
+      // the list name as that can be duplicated
+      let listArr = res.rows.filter(row => row.doc.listName === currentList);
+      let newList = {}
+      if (listArr.length) {
+        newList = listArr[0].doc;
+      }
+      console.log(newList)
+      let newItems = newList.todoItems || [];
+      newItems.unshift(item);
+      if (!newList._id) {
+        newList._id = new Date().toISOString();
+        newList.listName = currentList;
+      }
+      newList.todoItems = newItems;
+      localDB.put(newList);
+    })
   }
 
   const handleLocalAdd = (e) => {
@@ -192,48 +173,27 @@ function App() {
     setItems(newItems);
   }
 
-  async function deleteDBItem(item) {
-    localDB.current.get(item._id).then((doc) => {
-      doc._deleted = true;
-      return localDB.current.put(doc);
-    }).catch(err => console.log(`Database Error: ${err}`))
-  }
-
   // delete item from delete button
   const deleteItem = (item) => {
-    deleteDBItem(item).then(() => {
-      // remove from local state
-      let copyItems = [...items];
-      let delInd = copyItems.findIndex(el => el._id === item._id);
-      copyItems.splice(delInd, 1);
-      setItems(copyItems);
-    })
+    // remove from local state
+    let copyItems = [...items];
+    let delInd = copyItems.findIndex(el => el._id === item._id);
+    copyItems.splice(delInd, 1);
+    setItems(copyItems);
+    // update localDB
+    updateItems(copyItems);
   }
 
-  async function updateItem(item) {
-    if (!localDB.current) return // no local DB
-    localDB.current.get(item._id).then((doc => {
-      if (item.todo === doc.todo && item.completed === doc.completed) return //item has not changed
-      return localDB.current.put({
-        _id: item._id,
-        _rev: doc._rev,
-        todo: item.todo,
-        completed: item.completed,
-      })
-    }))
-  }
-
-  async function updateOrder(order) {
-      // debugger
-      if (order === sortOrder) return; //sort order has not changed
-      setSortOrder(order);
-      localDB.current.get('sort-order').then((doc => {
-        return localDB.current.put({
-          _id: 'sort-order',
-          _rev: doc._rev,
-          order: order
-        })
+  // send local state changes to the DB
+  async function updateItems(newItems) {
+    if (!localDB) return // no local DB
+    localDB.allDocs({ include_docs: true }).then(res => {
+      let curList = res.rows.find(el => el.doc.listName === currentList);
+      localDB.get(curList.id).then((doc => {
+        doc.todoItems = newItems;
+        localDB.put(doc)
       }))
+    })
   }
 
   // send updated items to DB
@@ -244,29 +204,14 @@ function App() {
     if (updatedIndex === -1) return //item not found
     // check if deleted and process
     if (e.keyCode === 8 && !e.target.value) {
-      // delete item from DB
-      deleteDBItem(copyItems[updatedIndex]).then(() => {
-        // remove from local state
-        copyItems.splice(updatedIndex, 1);
-        setItems(copyItems);
-      }).catch(err => "Error removing from DB" + err);
+      // delete item from local state
+      copyItems.splice(updatedIndex, 1);
+      setItems(copyItems);
+      // update localDB
+      updateItems(copyItems);
     } else {
-      updateItem(copyItems[updatedIndex]);
+      updateItems(copyItems);
     }
-    // check if enter and add new blank todo below
-    // COME BACK TO THIS WHEN DOING SORTABLE
-    // if (e.keyCode === 13) {
-    //   let newBlank = {
-    //     _id: new Date().toISOString(),
-    //     todo: newItem,
-    //     completed: false,
-    //   }
-    //   copyItems.splice(updatedIndex + 1, 0, newBlank);
-    //   setItems(copyItems);
-    //   db.addItem(newBlank);
-    //   return;
-    // }
-    // update item in DB
   }
 
   // update newItem state on input change
@@ -276,16 +221,16 @@ function App() {
 
   // update state and DB when item checked
   const handleChecked = (item) => {
-    // debugger
+    // update the state
     let copyItems = [...items];
     for (let i of copyItems) {
       if (i === item) {
-        // debugger
         i.completed = !i.completed;
-        updateItem(i);
       }
     }
     setItems(copyItems);
+    // update the localDB
+    updateItems(copyItems);
   }
 
   const resGoogle = (res) => {
@@ -327,8 +272,6 @@ function App() {
         <TodoList
           items={items}
           setItems={setItems}
-          order={sortOrder}
-          setOrder={updateOrder}
           handleItemUpdate={handleItemUpdate}
           handleLocalAdd={handleLocalAdd}
           handleItemChange={handleItemChange}
