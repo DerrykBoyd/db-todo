@@ -35,7 +35,8 @@ app.put('/:dbName', (req, res) => {
     nano.db.create(dbName).then(body => {
         res.send('Database Created')
     }).catch(err => {
-        if (err.error === 'file_exists') res.send('DB already exists')
+        if (err.error === 'file_exists') res.send('DB already exists');
+        else res.send(err.error);
     })
 
 })
