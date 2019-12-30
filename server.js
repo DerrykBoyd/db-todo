@@ -17,8 +17,13 @@ const SERV_PORT = 4000;
 // Convert DB credentials to base64
 let dbAuth = `${DB_USER}:${DB_PASS}`;
 
+const opts = {
+    url: `${HTTP}${dbAuth}@${DB_HOST}`,
+    parseUrl: false
+}
+
 // connect nano to couchDB
-const nano = require('nano')(`${HTTP}${dbAuth}@${DB_HOST}`);
+const nano = require('nano')(opts);
 
 // test if server is running
 app.get('/test', (req, res) => {
