@@ -40,7 +40,7 @@ app.put('/:dbName', (req, res) => {
         res.send('Database Created')
     }).catch(err => {
         if (err.error === 'file_exists') res.send('DB already exists');
-        else res.send(err.error);
+        else res.send(err);
     })
 
 })
