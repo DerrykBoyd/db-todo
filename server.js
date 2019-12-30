@@ -19,7 +19,8 @@ let dbAuth = `${DB_USER}:${DB_PASS}`;
 
 const opts = {
     url: `${HTTP}${dbAuth}@${DB_HOST}`,
-    parseUrl: false
+    parseUrl: false,
+    family: 4
 }
 
 // connect nano to couchDB
