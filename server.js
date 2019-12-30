@@ -22,6 +22,11 @@ let dbAuth64 = buff.toString('base64');
 
 console.log(dbAuth64);
 
+// test if server is running
+app.get('/test', (req, res) => {
+    res.send('Server Running.')
+})
+
 // Route for creating a new DB if none existing
 app.put('/:dbName', (req, res) => {
 
