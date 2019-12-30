@@ -19,7 +19,7 @@ const SERV_PORT = 4000;
 let dbAuth = `${DB_USER}:${DB_PASS}`;
 
 // connect nano to couchDB
-const nano = require('nano')(`http://${dbAuth}@${DB_HOST}:${DB_PORT}`);
+const nano = require('nano')(`${HTTP}${dbAuth}@${DB_HOST}:${DB_PORT}`);
 
 // test if server is running
 app.get('/test', (req, res) => {
