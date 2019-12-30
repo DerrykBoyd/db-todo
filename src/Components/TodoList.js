@@ -6,25 +6,27 @@ import arrayMove from 'array-move';
 export default function TodoList(props) {
 
   const SortableItem = SortableElement(({ item }) => (
-    <TodoItem
-      key={item._id}
-      item={item}
-      checked={item.completed}
-      handleItemUpdate={props.handleItemUpdate}
-      handleLocalAdd={props.handleLocalAdd}
-      handleItemChange={props.handleItemChange}
-      handleChecked={props.handleChecked}
-      deleteItem={props.deleteItem}>
-    </TodoItem>
+    <div>
+      <TodoItem
+        key={item._id}
+        item={item}
+        checked={item.completed}
+        handleItemUpdate={props.handleItemUpdate}
+        handleLocalAdd={props.handleLocalAdd}
+        handleItemChange={props.handleItemChange}
+        handleChecked={props.handleChecked}
+        deleteItem={props.deleteItem}>
+      </TodoItem>
+    </div>
   ));
 
   const SortableList = SortableContainer(({ items }) => {
     return (
-      <ul>
+      <div>
         {items.map((item, index) => (
           <SortableItem key={item._id} index={index} item={item} />
         ))}
-      </ul>
+      </div>
     )
   })
 
@@ -41,7 +43,6 @@ export default function TodoList(props) {
       <SortableList
         items={props.items}
         onSortEnd={onSortEnd}
-        useDragHandle
       />
     </section>
   )

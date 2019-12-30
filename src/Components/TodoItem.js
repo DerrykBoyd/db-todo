@@ -1,6 +1,6 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './TodoItem.css';
-import {sortableHandle} from 'react-sortable-hoc';
+import { sortableHandle } from 'react-sortable-hoc';
 
 export default function TodoItem(props) {
 
@@ -29,8 +29,8 @@ export default function TodoItem(props) {
     const toggleChecked = () => {
         hidePopup();
         props.handleChecked(props.item);
-    } 
-    
+    }
+
     const ref = useRef(null);
 
     const handleClickOutside = (e) => {
@@ -41,10 +41,12 @@ export default function TodoItem(props) {
         }
     }
 
-    const DragHandle = sortableHandle(() => (
-        <i className={`material-icons md-light md-inactive handle`}
-                    >drag_handle</i>
-    ))
+    // const DragHandle = sortableHandle(() => <span> :: </span>)
+
+    // const DragHandle = sortableHandle(() => (
+    //     <i className={`material-icons md-light md-inactive handle`}
+    //     >drag_handle</i>
+    // ))
 
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
@@ -55,25 +57,25 @@ export default function TodoItem(props) {
 
     return (
         <div className="todo-item-wrapper" data-id={props.item._id}>
-            <i  onClick={toggleChecked}
+            <i onClick={toggleChecked}
                 className={`material-icons ${props.checked ? "hidden" : ''}`}>check_box_outline_blank</i>
-            <i  onClick={toggleChecked} 
+            <i onClick={toggleChecked}
                 className={`material-icons checked ${!props.checked ? "hidden" : ''}`}>check_box</i>
-            <input  type="text"
-                    className={`todo-item ${props.checked ? "todo-checked" : ''}`}
-                    placeholder="New Todo"
-                    id={props.item._id}
-                    onChange={props.handleItemChange}
-                    onKeyDown={props.handleItemUpdate}
-                    onBlur={props.handleItemUpdate}
-                    value={props.item.todo}>
+            <input type="text"
+                className={`todo-item ${props.checked ? "todo-checked" : ''}`}
+                placeholder="New Todo"
+                id={props.item._id}
+                onChange={props.handleItemChange}
+                onKeyDown={props.handleItemUpdate}
+                onBlur={props.handleItemUpdate}
+                value={props.item.todo}>
             </input>
             <div className='overflow-icons'>
                 <i className={`material-icons md-18 md-light md-inactive ${showDrag ? null : "hidden"}`}
                     onClick={showMenu}>more_vert</i>
                 <i className={`material-icons md-18 ${showClose ? '' : "hidden"}`}
                     onClick={hideClose}>close</i>
-                
+
                 <div className="item-menu-wrap">
                     <div
                         ref={ref}
@@ -85,7 +87,8 @@ export default function TodoItem(props) {
                     </div>
                 </div>
             </div>
-            <DragHandle />
+            <i className={`material-icons md-light md-inactive handle`}
+            >drag_handle</i>
         </div>
     );
 };
