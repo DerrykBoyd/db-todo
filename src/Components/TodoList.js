@@ -3,32 +3,31 @@ import TodoItem from './TodoItem';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 
-export default function TodoList(props) {
-
-  const SortableItem = SortableElement(({ item }) => (
+const SortableList = SortableContainer(({ items, props }) => {
+  return (
     <div>
-      <TodoItem
-        key={item._id}
-        item={item}
-        checked={item.completed}
-        handleItemUpdate={props.handleItemUpdate}
-        handleLocalAdd={props.handleLocalAdd}
-        handleItemChange={props.handleItemChange}
-        handleChecked={props.handleChecked}
-        deleteItem={props.deleteItem}>
-      </TodoItem>
+      {items.map((item, index) => (
+        <SortableItem key={item._id} index={index} item={item} props={props} />
+      ))}
     </div>
-  ));
+  )
+})
 
-  const SortableList = SortableContainer(({ items }) => {
-    return (
-      <div>
-        {items.map((item, index) => (
-          <SortableItem key={item._id} index={index} item={item} />
-        ))}
-      </div>
-    )
-  })
+const SortableItem = SortableElement(({ item, props }) => (
+  <div>
+    <TodoItem
+      item={item}
+      checked={item.completed}
+      handleItemUpdate={props.handleItemUpdate}
+      handleLocalAdd={props.handleLocalAdd}
+      handleItemChange={props.handleItemChange}
+      handleChecked={props.handleChecked}
+      deleteItem={props.deleteItem}>
+    </TodoItem>
+  </div>
+));
+
+export default function TodoList(props) {
 
   const onSortEnd = ({oldIndex, newIndex}) => {
     // update items in state
@@ -42,6 +41,7 @@ export default function TodoList(props) {
     <section className="todo-items" id="todo-items">
       <SortableList
         items={props.items}
+        props={props}
         onSortEnd={onSortEnd}
         pressDelay={200}
       />
