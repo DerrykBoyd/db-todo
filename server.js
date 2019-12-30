@@ -12,6 +12,7 @@ const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
 const DB_HOST = process.env.DB_HOST;
 const DB_PORT = process.env.DB_PORT;
+const HTTP = process.env.DB_HTTP;
 const SERV_PORT = 4000;
 
 // Convert DB credentials to base64
