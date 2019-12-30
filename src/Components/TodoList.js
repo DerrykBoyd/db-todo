@@ -43,6 +43,7 @@ export default function TodoList(props) {
       <SortableList
         items={props.items}
         onSortEnd={onSortEnd}
+        pressDelay={200}
       />
     </section>
   )
