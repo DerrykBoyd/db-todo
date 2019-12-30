@@ -11,7 +11,6 @@ app.use(cors());
 const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
 const DB_HOST = process.env.DB_HOST;
-const DB_PORT = process.env.DB_PORT;
 const HTTP = process.env.DB_HTTP;
 const SERV_PORT = 4000;
 
@@ -19,7 +18,7 @@ const SERV_PORT = 4000;
 let dbAuth = `${DB_USER}:${DB_PASS}`;
 
 // connect nano to couchDB
-const nano = require('nano')(`${HTTP}${dbAuth}@${DB_HOST}:${DB_PORT}`);
+const nano = require('nano')(`${HTTP}${dbAuth}@${DB_HOST}`);
 
 // test if server is running
 app.get('/test', (req, res) => {
