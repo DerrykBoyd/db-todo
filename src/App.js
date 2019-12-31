@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
@@ -30,6 +30,9 @@ function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '')
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
+
+  // ref for new input focus
+  let newInput = useRef(null);
 
   // get data from the DB on load
   const getData = useCallback(() => {
@@ -189,15 +192,37 @@ function App() {
     if (!localDB) return // no local DB
     localDB.allDocs({ include_docs: true }).then(res => {
       let curList = res.rows.find(el => el.doc.listName === currentList);
-      localDB.get(curList.id).then((doc => {
+      localDB.get(curList.id).then(doc => {
         doc.todoItems = newItems;
-        localDB.put(doc)
-      }))
+        localDB.put(doc).catch(e => console.error(e))
+      }).catch(e => {
+        console.error(e)
+      })
     })
   }
 
   // send updated items to DB
   const handleItemUpdate = (e) => {
+    // do not update on tab
+    if (e.keyCode === 9) return;
+    // enter should add a new blank todo
+    if (e.keyCode === 13) {
+      let newItems = [...items];
+      let i = newItems.findIndex(el => el.todo === e.target.value);
+      if (i === -1) return;
+      let blankItem = {
+        _id: new Date().toISOString(),
+        todo: '',
+        completed: false,
+      };
+      newItems.splice(i+1, 0, blankItem);
+      setItems(newItems);
+      // focus the new element
+      setTimeout(() => {
+        document.getElementById(blankItem._id).focus()
+      }, 200);
+      return;
+    }
     let copyItems = [...items];
     // find updated item
     let updatedIndex = copyItems.findIndex(el => el._id === e.target.id);

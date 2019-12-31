@@ -55,7 +55,7 @@ export default function TodoItem(props) {
                 className={`material-icons checked ${!props.checked ? "hidden" : ''}`}>check_box</i>
             <input type="text"
                 className={`todo-item ${props.checked ? "todo-checked" : ''}`}
-                placeholder="New Todo"
+                placeholder="Todo"
                 key={props.item._id}
                 id={props.item._id}
                 onChange={props.handleItemChange}
@@ -68,7 +68,6 @@ export default function TodoItem(props) {
                     onClick={showMenu}>more_vert</i>
                 <i className={`material-icons md-18 ${showClose ? '' : "hidden"}`}
                     onClick={hideClose}>close</i>
-
                 <div className="item-menu-wrap">
                     <div
                         ref={ref}

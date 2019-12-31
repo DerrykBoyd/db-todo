@@ -37,7 +37,7 @@
 
 .item-menu-wrap {
   position: absolute;
-  transform: translate(-6.75rem, -2.5rem);
+  transform: translate(-6.75rem, -1rem);
 }
 
 .item-menu {
@@ -53,7 +53,7 @@
 
 .item-menu:after {
 	left: 92%;
-	bottom: 0.75rem;
+	bottom: 1rem;
 	border: solid transparent;
 	content: "";
 	height: 0;
