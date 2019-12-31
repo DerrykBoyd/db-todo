@@ -201,6 +201,18 @@ function App() {
     })
   }
 
+  // sort by completed at top
+  const sortByCompleted = (todos) => {
+    let uncheckedItems = [];
+    let checkedItems = [];
+    todos.forEach(el => {
+      if (el.completed) checkedItems.push(el)
+      else uncheckedItems.push(el)
+    })
+    let newItems = [...uncheckedItems, ...checkedItems];
+    return newItems;
+  }
+
   // send updated items to DB
   const handleItemUpdate = (e) => {
     // do not update on tab
@@ -253,6 +265,9 @@ function App() {
         i.completed = !i.completed;
       }
     }
+    //sort by checked
+    copyItems = sortByCompleted(copyItems);
+    // set local state
     setItems(copyItems);
     // update the localDB
     updateItems(copyItems);
