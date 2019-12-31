@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
@@ -24,15 +24,12 @@ function App() {
   const [loadingDB, setLoadingDB] = useState(true);
   const [currentList, setCurrentList] = useState('default');
   const [items, setItems] = useState([]);
-  const [newItem, setNewItem] = useState("")
+  const [newItem, setNewItem] = useState("");
   const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
-  const [userID, setUserID] = useState(localStorage.getItem('userID') || '')
-  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '')
-  const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '')
-  const [userName, setUserName] = useState(localStorage.getItem('userName') || '')
-
-  // ref for new input focus
-  let newInput = useRef(null);
+  const [userID, setUserID] = useState(localStorage.getItem('userID') || '');
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
+  const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
 
   // get data from the DB on load
   const getData = useCallback(() => {
@@ -42,12 +39,12 @@ function App() {
       if (filteredRes.length) setItems(filteredRes[0].doc.todoItems);
       setLoadingDB(false);
     });
-  }, [remoteDB, currentList])
+  }, [remoteDB, currentList]);
 
   // set up local DB for each user
   useEffect(() => {
     setLocalDB(new PouchDB(userID))
-  }, [userID])
+  }, [userID]);
 
   // check if remote DB exists and create if not
   useEffect(() => {
@@ -156,14 +153,14 @@ function App() {
       _id: new Date().toISOString(),
       todo: newItem,
       completed: false,
-    }
-    addItem(itemToAdd)
+    };
+    addItem(itemToAdd);
     setItems([itemToAdd, ...items]);
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: "smooth"
-    })
+    });
     setNewItem("");
     e.preventDefault();
   }
@@ -206,8 +203,8 @@ function App() {
     let uncheckedItems = [];
     let checkedItems = [];
     todos.forEach(el => {
-      if (el.completed) checkedItems.push(el)
-      else uncheckedItems.push(el)
+      if (el.completed) checkedItems.push(el);
+      else uncheckedItems.push(el);
     })
     let newItems = [...uncheckedItems, ...checkedItems];
     return newItems;
@@ -231,14 +228,14 @@ function App() {
       setItems(newItems);
       // focus the new element
       setTimeout(() => {
-        document.getElementById(blankItem._id).focus()
+        document.getElementById(blankItem._id).focus();
       }, 200);
       return;
     }
     let copyItems = [...items];
     // find updated item
     let updatedIndex = copyItems.findIndex(el => el._id === e.target.id);
-    if (updatedIndex === -1) return //item not found
+    if (updatedIndex === -1) return; //item not found
     // check if deleted and process
     if (e.keyCode === 8 && !e.target.value) {
       // delete item from local state
