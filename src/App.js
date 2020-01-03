@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   BrowserRouter as Router,
-  Switch,
   Route,
   Link,
   useHistory,
   Redirect
 } from "react-router-dom";
-import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
 import PouchDB from 'pouchdb';
@@ -16,6 +14,8 @@ import TodoAdd from './Components/TodoAdd';
 import Header from './Components/Header';
 import GoogleLogin from 'react-google-login';
 import axios from 'axios';
+import Login from './Components/Login';
+import SignUp from './Components/SignUp';
 
 function App() {
 
@@ -296,7 +296,7 @@ function App() {
     window.location.reload(true);
   }
 
-  function Login() {
+  function Home() {
 
     useEffect(() => {
       document.title = 'Todo'
@@ -307,21 +307,21 @@ function App() {
 
     return (
       <div className={`App`}>
-        <Header logo={logo} />
+        <Header />
         <h3>Login</h3>
-        <button
+        <Link
           className="mat-btn"
           value="Login"
-          onClick={() => console.log('login clicked')}
+          to='/login'
         >Login
-            </button>
+            </Link>
         <h3>Create new account</h3>
-        <button
+        <Link
           className="mat-btn"
           value="Register"
-          onClick={() => console.log('register clicked')}
+          to='/signup'
         >Sign Up
-            </button>
+            </Link>
         <div className='google-btn'>
           <h3>Login with Google</h3>
           <GoogleLogin
@@ -346,7 +346,6 @@ function App() {
       <div className={`App Lists`}>
         <Header
           handleLogout={handleLogout}
-          logo={logo}
           loggedIn={loggedIn}
           userImg={userImg} />
         <TodoList
@@ -383,7 +382,15 @@ function App() {
     <Router>
       <Route path="/" exact render={() => {
         if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <Home />
+      }} />
+      <Route path="/login" render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
         return <Login />
+      }} />
+      <Route path="/signup" render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <SignUp />
       }} />
       <PrivateRoute path="/lists" auth={loggedIn} >
         <Lists />

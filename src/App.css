@@ -9,6 +9,10 @@
   flex-direction: column;
 }
 
+a {
+  color: #5c6bc0;
+}
+
 input:focus {
   outline: none;
 }
@@ -54,6 +58,7 @@ input:focus {
   outline: none;
   cursor: pointer;
   transition: box-shadow 0.2s;
+  text-decoration: none;
 }
 
 .mat-btn::-moz-focus-inner {

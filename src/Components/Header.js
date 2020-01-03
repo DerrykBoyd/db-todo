@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Header.css';
+import logo from '../logo.svg';
+import {Link} from 'react-router-dom';
 
 export default function Header(props) {
 
@@ -47,7 +49,9 @@ export default function Header(props) {
 
     return (
         <header className="App-header">
-            <img src={props.logo} className="App-logo" alt="logo" />
+            <Link to='/'>
+                <img src={logo} className="App-logo" alt="logo" />
+            </Link>
             <h1 className="app-title">DB Todo App</h1>
             {props.loggedIn === "true" && profile}
             <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
