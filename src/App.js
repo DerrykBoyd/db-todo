@@ -1,4 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  useHistory,
+  Redirect
+} from "react-router-dom";
 import logo from './logo.svg';
 import './App.css';
 import './Styles/animations.css';
@@ -224,7 +232,7 @@ function App() {
         todo: '',
         completed: false,
       };
-      newItems.splice(i+1, 0, blankItem);
+      newItems.splice(i + 1, 0, blankItem);
       setItems(newItems);
       // focus the new element
       setTimeout(() => {
@@ -270,12 +278,13 @@ function App() {
     updateItems(copyItems);
   }
 
-  const resGoogle = (res) => {
+  const resGoogle = (res, history) => {
     setUserID(res.profileObj.googleId);
     setUserEmail(res.profileObj.email);
     setUserImg(res.profileObj.imageUrl);
     setUserName(res.profileObj.name);
     setLoggedIn("true");
+    history.push('/lists')
   }
 
   const respGoogleFail = (res) => {
@@ -287,20 +296,54 @@ function App() {
     window.location.reload(true);
   }
 
-  return (
-    <div>
-      <div className={`App Login ${loggedIn === "true" ? 'hidden' : ''}`}>
+  function Login() {
+
+    useEffect(() => {
+      document.title = 'Todo'
+    }, []);
+
+    // set the app history react router
+    let history = useHistory();
+
+    return (
+      <div className={`App`}>
         <Header logo={logo} />
-        <h3>Login with Google</h3>
-        <GoogleLogin
-          clientId="245694344398-gc2fikf31q0d4kcee70nuqj5lhnmu5u7.apps.googleusercontent.com"
-          buttonText="Login"
-          onSuccess={(res) => resGoogle(res)}
-          onFailure={respGoogleFail}
-          cookiePolicy={'single_host_origin'}
-        />
+        <h3>Login</h3>
+        <button
+          className="mat-btn"
+          value="Login"
+          onClick={() => console.log('login clicked')}
+        >Login
+            </button>
+        <h3>Create new account</h3>
+        <button
+          className="mat-btn"
+          value="Register"
+          onClick={() => console.log('register clicked')}
+        >Sign Up
+            </button>
+        <div className='google-btn'>
+          <h3>Login with Google</h3>
+          <GoogleLogin
+            clientId="245694344398-gc2fikf31q0d4kcee70nuqj5lhnmu5u7.apps.googleusercontent.com"
+            buttonText="Login"
+            onSuccess={(res) => resGoogle(res, history)}
+            onFailure={respGoogleFail}
+            cookiePolicy={'single_host_origin'}
+          />
+        </div>
       </div>
-      <div className={`App ${loggedIn === "true" ? '' : 'hidden'}`}>
+    )
+  }
+
+  function Lists() {
+
+    useEffect(() => {
+      document.title = 'Todo-My Lists'
+    }, []);
+
+    return (
+      <div className={`App Lists`}>
         <Header
           handleLogout={handleLogout}
           logo={logo}
@@ -322,7 +365,30 @@ function App() {
           handleLocalAdd={handleLocalAdd}>
         </TodoAdd>
       </div>
-    </div>
+    )
+  }
+
+  function PrivateRoute({ children, ...rest }) {
+    return (
+      <Route
+        {...rest}
+        render={(props) => localStorage.getItem('loggedIn') === 'true'
+          ? children
+          : <Redirect to={{ pathname: '/', state: { from: props.location } }} />}
+      />
+    )
+  }
+
+  return (
+    <Router>
+      <Route path="/" exact render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <Login />
+      }} />
+      <PrivateRoute path="/lists" auth={loggedIn} >
+        <Lists />
+      </PrivateRoute>
+    </Router>
   )
 }
 

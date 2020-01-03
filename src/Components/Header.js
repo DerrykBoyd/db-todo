@@ -53,7 +53,7 @@ export default function Header(props) {
             <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
                 <div className="profile-menu scale-in-tr" ref={ref}>
                     <button
-                        className="logout-btn"
+                        className="mat-btn"
                         value="Logout"
                         onClick={props.handleLogout}
                     >Logout
