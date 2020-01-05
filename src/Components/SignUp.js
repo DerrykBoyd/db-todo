@@ -1,14 +1,19 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import './Login.css';
 import Header from './Header';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
+import axios from 'axios';
+
+const API_URL = process.env.NODE_ENV === 'development' ?
+    'http://localhost:4000' :
+    'https://db-todo.duckdns.org/api';
 
 export default function Login(props) {
 
     useEffect(() => {
         document.title = 'Todo-SignUp'
-      }, []);
-    
+    }, []);
+
     return (
         <div className={'App'}>
             <Header />
@@ -30,10 +35,9 @@ export default function Login(props) {
                     return errors;
                 }}
                 onSubmit={(values, { setSubmitting }) => {
-                    setTimeout(() => {
-                        alert(JSON.stringify(values, null, 2));
-                        setSubmitting(false);
-                    }, 400);
+                    axios.post(`${API_URL}/register`, values).then(res => {
+                        console.log(res.body)
+                    }).catch(e => console.log(e));
                 }}
             >
                 {({ isSubmitting }) => (

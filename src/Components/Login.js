@@ -1,53 +1,61 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Login.css';
 import Header from './Header';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import {Link} from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
+import axios from 'axios';
+
+axios.defaults.withCredentials = true;
+
+const API_URL = process.env.NODE_ENV === 'development' ?
+    'http://localhost:4000' :
+    'https://db-todo.duckdns.org/api';
 
 export default function Login(props) {
 
     useEffect(() => {
-        document.title = 'Todo-Login'
+        document.title = 'Todo-Login';
     }, []);
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    let history = useHistory();
+
+    const handleInputChange = (event) => {
+        if (event.target.name === 'email') setEmail(event.target.value);
+        else setPassword(event.target.value);
+    }
+
+    const handleSubmit = (event) => {
+        // send login cred. to server
+        axios.post(`${API_URL}/login`, {
+                email: email,
+                password: password
+        }).then(res => { // handle server response
+            // login local user if success
+            if (res.data.message === 'login success'){
+                console.log('handle user here');
+                props.loginLocal(res.data.user, history);
+            }
+            console.log(res)
+        })
+        event.preventDefault();
+    }
 
     return (
         <div className={'App'}>
             <Header />
-            <h3>Login Form</h3>
-            <Formik
-                initialValues={{ email: '', password: '' }}
-                validate={values => {
-                    const errors = {};
-                    if (!values.email) {
-                        errors.email = 'Required';
-                    } else if (
-                        !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-                    ) {
-                        errors.email = 'Invalid email address';
-                    }
-                    return errors;
-                }}
-                onSubmit={(values, { setSubmitting }) => {
-                    setTimeout(() => {
-                        alert(JSON.stringify(values, null, 2));
-                        setSubmitting(false);
-                    }, 400);
-                }}
-            >
-                {({ isSubmitting }) => (
-                    <Form className='login-form'>
-                        <label htmlFor='email'>Email</label>
-                        <Field type="email" name="email" autoComplete='on' />
-                        <ErrorMessage className='err-msg' name="email" component="div" />
-                        <label htmlFor='password'>Password</label>
-                        <Field type="password" name="password" autoComplete='on' />
-                        <ErrorMessage className='err-msg' name="password" component="div" />
-                        <button className='mat-btn login-btn' type="submit" disabled={isSubmitting}>
-                            Login
+            <h3>Login</h3>
+            <form className='login-form' onSubmit={handleSubmit}>
+                <label htmlFor='email'>Email</label>
+                <input type="email" name="email" autoComplete='on' value={email}
+                    onChange={handleInputChange} />
+                <label htmlFor='password'>Password</label>
+                <input type="password" name="password" autoComplete='on'
+                    value={password} onChange={handleInputChange} />
+                <button className='mat-btn login-btn'>
+                    Login
                         </button>
-                    </Form>
-                )}
-            </Formik>
+            </form>
             <div id='new-user'>
                 <p>Don't have an account?</p>
                 <Link to='/signup'>Register Here</Link>

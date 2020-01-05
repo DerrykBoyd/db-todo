@@ -2,20 +2,29 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   BrowserRouter as Router,
   Route,
-  Link,
-  useHistory,
   Redirect
 } from "react-router-dom";
 import './App.css';
 import './Styles/animations.css';
 import PouchDB from 'pouchdb';
-import TodoList from './Components/TodoList';
-import TodoAdd from './Components/TodoAdd';
-import Header from './Components/Header';
-import GoogleLogin from 'react-google-login';
 import axios from 'axios';
 import Login from './Components/Login';
 import SignUp from './Components/SignUp';
+import Home from './Components/Home';
+import Lists from './Components/Lists';
+
+axios.defaults.withCredentials = true;
+
+function PrivateRoute({ children, ...rest }) {
+  return (
+    <Route
+      {...rest}
+      render={(props) => localStorage.getItem('loggedIn') === 'true'
+        ? children
+        : <Redirect to={{ pathname: '/', state: { from: props.location } }} />}
+    />
+  )
+}
 
 function App() {
 
@@ -38,6 +47,13 @@ function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+
+  // check if logged in via local
+  useEffect(() => {
+    axios.get(`${API_URL}/test`).then((res) => {
+      console.log(res);
+    })
+  }, [API_URL])
 
   // get data from the DB on load
   const getData = useCallback(() => {
@@ -287,6 +303,15 @@ function App() {
     history.push('/lists')
   }
 
+  const loginLocal = (user, history) => {
+    setUserID(user._id);
+    setUserEmail(user.email);
+    setUserImg(user.img);
+    setUserName(user.name);
+    setLoggedIn("true");
+    history.push('/lists');
+  }
+
   const respGoogleFail = (res) => {
     console.log(res);
   }
@@ -296,59 +321,27 @@ function App() {
     window.location.reload(true);
   }
 
-  function Home() {
-
-    useEffect(() => {
-      document.title = 'Todo'
-    }, []);
-
-    // set the app history react router
-    let history = useHistory();
-
-    return (
-      <div className={`App`}>
-        <Header />
-        <h3>Login</h3>
-        <Link
-          className="mat-btn"
-          value="Login"
-          to='/login'
-        >Login
-            </Link>
-        <h3>Create new account</h3>
-        <Link
-          className="mat-btn"
-          value="Register"
-          to='/signup'
-        >Sign Up
-            </Link>
-        <div className='google-btn'>
-          <h3>Login with Google</h3>
-          <GoogleLogin
-            clientId="245694344398-gc2fikf31q0d4kcee70nuqj5lhnmu5u7.apps.googleusercontent.com"
-            buttonText="Login"
-            onSuccess={(res) => resGoogle(res, history)}
-            onFailure={respGoogleFail}
-            cookiePolicy={'single_host_origin'}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  function Lists() {
-
-    useEffect(() => {
-      document.title = 'Todo-My Lists'
-    }, []);
-
-    return (
-      <div className={`App Lists`}>
-        <Header
+  return (
+    <Router>
+      <Route path="/" exact render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <Home 
+          resGoogle={resGoogle}
+          respGoogleFail={respGoogleFail}/>
+      }} />
+      <Route path="/login" render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <Login loginLocal={loginLocal} />
+      }} />
+      <Route path="/signup" render={() => {
+        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
+        return <SignUp loginLocal={loginLocal} />
+      }} />
+      <PrivateRoute path="/lists" auth={loggedIn} >
+        <Lists 
           handleLogout={handleLogout}
           loggedIn={loggedIn}
-          userImg={userImg} />
-        <TodoList
+          userImg={userImg}
           items={items}
           setItems={setItems}
           updateItems={updateItems}
@@ -356,44 +349,10 @@ function App() {
           handleLocalAdd={handleLocalAdd}
           handleItemChange={handleItemChange}
           handleChecked={handleChecked}
-          deleteItem={deleteItem}>
-        </TodoList>
-        <TodoAdd
+          deleteItem={deleteItem}
           newItem={newItem}
           handleNewChange={handleNewChange}
-          handleLocalAdd={handleLocalAdd}>
-        </TodoAdd>
-      </div>
-    )
-  }
-
-  function PrivateRoute({ children, ...rest }) {
-    return (
-      <Route
-        {...rest}
-        render={(props) => localStorage.getItem('loggedIn') === 'true'
-          ? children
-          : <Redirect to={{ pathname: '/', state: { from: props.location } }} />}
-      />
-    )
-  }
-
-  return (
-    <Router>
-      <Route path="/" exact render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <Home />
-      }} />
-      <Route path="/login" render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <Login />
-      }} />
-      <Route path="/signup" render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <SignUp />
-      }} />
-      <PrivateRoute path="/lists" auth={loggedIn} >
-        <Lists />
+          />
       </PrivateRoute>
     </Router>
   )

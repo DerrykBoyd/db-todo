@@ -33,18 +33,18 @@ export default function Header(props) {
 
     let profile;
 
-    if (props.userImg) {
+    if (!props.userImg || props.userImg === 'undefined') {
+        profile = <i
+            ref={profileRef}
+            className="material-icons profile-img"
+            onClick={showProfileMenu}>person</i>
+    } else {
         profile = <img
             ref={profileRef}
             className="profile-img"
             onClick={showProfileMenu}
             src={props.userImg}
             alt="profile"></img>
-    } else {
-        profile = <i
-            ref={profileRef}
-            className="material-icons profile-img"
-            onClick={showProfileMenu}>person</i>
     }
 
     return (
