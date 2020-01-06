@@ -24,6 +24,7 @@ export default function Login(props) {
 
     const [form, setForm] = useState(blankForm);
     const [errors, setErrors] = useState(blankForm);
+    const [serverErr, setServerErr] = useState('');
 
     let history = useHistory();
 
@@ -46,12 +47,10 @@ export default function Login(props) {
         event.preventDefault();
         // reset errors
         setErrors(blankForm);
-        console.log('test submit');
-        // TODO form validation here
+        setServerErr('');
         // check for blank name - return err
         if (!form.name.length) handleErrChange('name', 'Required');
         // check for valid email - return err
-        else if (!form.email.length) handleErrChange('email', 'Required');
         else if (!validEmailRegex.test(form.email)) handleErrChange('email', 'Invalid email');
         // check password length - return err
         else if (form.password.length < 6) handleErrChange('password', 'Password must be at least 6 characters')
@@ -64,6 +63,10 @@ export default function Login(props) {
                 // login local user if signup successful
                 if (res.data.message === 'signup-success') {
                     props.loginLocal(res.data.user, history);
+                } else if (res.data === 'invalid-email') {
+                    handleErrChange('email', 'Invalid email');
+                } else {
+                    setServerErr(res.data);
                 }
                 console.log(res)
             })
@@ -93,54 +96,17 @@ export default function Login(props) {
                 {errors.passwordRpt.length > 0 && <span className='err-msg'>{errors.passwordRpt}</span>}
                 <button className='mat-btn login-btn' onClick={handleSubmit}>
                     Register
-                        </button>
+                </button>
+                {serverErr.length > 0 &&
+                <div className='server-err'>
+                    <p>{serverErr}</p>
+                </div>
+                }
             </form>
             <div className='form-link'>
                 <p>Already have an account?</p>
                 <Link to='/login'>Login Here</Link>
             </div>
-            {/* <Formik
-                initialValues={{ name: '', email: '', password: '', passwordRpt: '' }}
-                validate={values => {
-                    const errors = {};
-                    if (!values.email) {
-                        errors.email = 'Required';
-                    } else if (
-                        !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-                    ) {
-                        errors.email = 'Invalid email address';
-                    }
-                    if (values.password !== values.passwordRpt) {
-                        errors.passwordRpt = 'Passwords do not match'
-                    }
-                    return errors;
-                }}
-                onSubmit={(values, { setSubmitting }) => {
-                    axios.post(`${API_URL}/register`, values).then(res => {
-                        console.log(res.body)
-                    }).catch(e => console.log(e));
-                }}
-            >
-                {({ isSubmitting }) => (
-                    <Form className='login-form'>
-                        <label htmlFor='name'>Name</label>
-                        <input type="text" name="name" />
-                        <ErrorMessage className='err-msg' name="name" component="div" />
-                        <label htmlFor='email'>Email</label>
-                        <input type="email" name="email" autoComplete='on' />
-                        <ErrorMessage className='err-msg' name="email" component="div" />
-                        <label htmlFor='password'>Password</label>
-                        <input type="password" name="password" autoComplete='on' />
-                        <ErrorMessage className='err-msg' name="password" component="div" />
-                        <label htmlFor='passwordRpt'>Repeat Password</label>
-                        <input type="password" name="passwordRpt" autoComplete='on' />
-                        <ErrorMessage className='err-msg' name="passwordRpt" component="div" />
-                        <button className='mat-btn login-btn' type="submit" disabled={isSubmitting}>
-                            Register
-                        </button>
-                    </Form>
-                )}
-            </Formik> */}
         </div>
     )
 }

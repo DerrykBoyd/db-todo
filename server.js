@@ -67,18 +67,37 @@ app.put('/:dbName', (req, res) => {
 
 })
 
+const validEmail = (email) => {
+    const validEmailRegex = RegExp(/[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/);
+    return validEmailRegex.test(email)
+}
+
 // register a new user
 app.post('/register', (req, res) => {
-    console.log(req.body); // for testing
-    // TODO - Add server side form validation
+    let form = req.body;
+    // check name is present
+    if (!form.name.length || !form.password.length) {
+        res.send('All fields Required');
+        return;
+    }
     // check valid email
+    if (!validEmail(form.email)) {
+        res.send('Invalid Email');
+        return;
+    }
     // check valid password
+    if (form.password.length < 6) {
+        res.send('Password must be at least 6 characters');
+        return;
+    } else if (form.password !== form.passwordRpt) {
+        res.send('Passwords do not match');
+        return;
+    }
     // generate id from user email
     let id = uuid(req.body.email, NAMESPACE);
     // check if user already exists, return if so
     userDB.get(id).then(user => {
-        console.log('User already exists - ' + user.email);
-        res.send('user-already-registered');
+        res.send('User email already registered');
         return;
     }).catch(e => {
         if (e.error === 'not_found') {
@@ -107,11 +126,20 @@ app.post('/register', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
-    console.log(req.body); // for testing
+    let form = req.body;
     // server side form validation
     // check if valid email
+    if (!validEmail(form.email)) {
+        res.send('Invalid Email');
+        return;
+    }
+    // check password
+    if (!form.password.length) {
+        res.send('Password required');
+        return;
+    }
     // retrieve ID from user email
-    let id = uuid(req.body.email, NAMESPACE);
+    let id = uuid(form.email, NAMESPACE);
     userDB.get(id, function (err, user) {
         if (err) {
             if (err.error === 'not_found') {

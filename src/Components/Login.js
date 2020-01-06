@@ -22,6 +22,7 @@ export default function Login(props) {
     const [password, setPassword] = useState('');
     const [emailErr, setEmailErr] = useState('');
     const [passwordErr, setPasswordErr] = useState('');
+    const [serverErr, setServerErr] = useState('');
     let history = useHistory();
 
     const handleInputChange = (event) => {
@@ -33,6 +34,7 @@ export default function Login(props) {
         event.preventDefault();
         setEmailErr('');
         setPasswordErr('');
+        setServerErr('');
         // check for blank fields and valid email - set errors
         if (!email.length) setEmailErr('Required');
         else if (!validEmailRegex.test(email)) setEmailErr('Please enter a valid email');
@@ -48,11 +50,13 @@ export default function Login(props) {
                 if (res.data.message === 'login-success') {
                     props.loginLocal(res.data.user, history);
                 } else if (res.data === 'user-not-found') {
-                    setEmailErr('Email not registered');
+                    setServerErr('Email not registered');
                 } else if (res.data === 'incorrect-password') {
-                    setPasswordErr('Incorrect Password');
+                    setServerErr('Incorrect Password');
+                } else if (res.data === 'Password required') {
+                    setServerErr(res.data)
                 } else {
-                    setPasswordErr('Login Error - Please try again')
+                    setServerErr('Login Error - Please try again')
                 }
             })
         }
@@ -73,7 +77,12 @@ export default function Login(props) {
                 {passwordErr.length > 0 && <span className='err-msg'>{passwordErr}</span>}
                 <button className='mat-btn login-btn' onClick={handleSubmit}>
                     Login
-                        </button>
+                </button>
+                {serverErr.length > 0 &&
+                    <div className='server-err'>
+                        <p>{serverErr}</p>
+                    </div>
+                }
             </form>
             <div className='form-link'>
                 <p>Don't have an account?</p>
