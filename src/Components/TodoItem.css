@@ -81,3 +81,7 @@
 i {
   cursor: pointer;
 }
+
+.handle {
+  cursor: grabbing;
+}

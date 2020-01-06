@@ -34,6 +34,10 @@ input:focus {
   margin-top: 3rem;
 }
 
+.form-link {
+  margin-top: 3rem;
+}
+
 .mat-btn {
   position: relative;
   display: inline-block;

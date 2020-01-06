@@ -1,18 +1,13 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
 const uuid = require('uuid/v5');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const flash = require('connect-flash');
 
 require('dotenv').config();
-
 
 const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
@@ -31,15 +26,6 @@ app.use(cors({
     origin: APP_URL
 }));
 app.use(cookieParser());
-app.use(session({
-    secret: 'secret',
-    resave: true,
-    saveUninitialized: true,
-    cookie: { maxAge: cookieAge }
-}));
-app.use(flash());
-app.use(passport.initialize());
-app.use(passport.session());
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -60,36 +46,6 @@ const userDB = nano.use('todo-users');
 const isValidPassword = (password, hash) => {
     return bcrypt.compareSync(password, hash);
 }
-
-passport.serializeUser(function (user, done) {
-    done(null, user._id);
-});
-
-passport.deserializeUser(function (id, done) {
-    userDB.get(id, function (err, user) {
-        done(err, user);
-    });
-});
-
-// Configure the login strategy
-passport.use(new LocalStrategy({
-    usernameField: 'email',
-    passReqToCallback: true
-},
-    function (req, username, password, done) {
-        let id = uuid(username, NAMESPACE);
-        userDB.get(id, function (err, user) {
-            if (err) { return done(err); }
-            if (!user) {
-                return done(null, false, { message: 'Incorrect username.' });
-            }
-            if (!isValidPassword(password, user.password)) {
-                return done(null, false, { message: 'Incorrect password.' });
-            }
-            return done(null, user);
-        });
-    }
-));
 
 // test if server is running
 app.get('/test', (req, res) => {
@@ -114,50 +70,66 @@ app.put('/:dbName', (req, res) => {
 // register a new user
 app.post('/register', (req, res) => {
     console.log(req.body); // for testing
+    // TODO - Add server side form validation
+    // check valid email
+    // check valid password
     // generate id from user email
     let id = uuid(req.body.email, NAMESPACE);
     // check if user already exists, return if so
-    userDB.get(id).then(body => console.log('User already exists'))
-        .catch(e => {
-            if (e.error === 'not_found') {
-                // save the user in the db
-                let hash = bcrypt.hashSync(req.body.password, salt);
-                let newUser = {
-                    _id: id,
-                    name: req.body.name,
-                    email: req.body.email,
-                    img: '',
-                    password: hash,
-                }
-                userDB.insert(newUser);
+    userDB.get(id).then(user => {
+        console.log('User already exists - ' + user.email);
+        res.send('user-already-registered');
+        return;
+    }).catch(e => {
+        if (e.error === 'not_found') {
+            // save the user in the db
+            let hash = bcrypt.hashSync(req.body.password, salt);
+            let newUser = {
+                _id: id,
+                name: req.body.name,
+                email: req.body.email,
+                img: '',
+                password: hash,
             }
-        });
-    console.log('Testing register route');
-    res.send('Register route!');
+            userDB.insert(newUser);
+            res.send({
+                message: 'signup-success',
+                user: {
+                    _id: newUser._id,
+                    name: newUser.name,
+                    email: newUser.email,
+                    img: newUser.img
+                }
+            });
+            return;
+        }
+    });
 })
 
 app.post('/login', (req, res) => {
     console.log(req.body); // for testing
+    // server side form validation
+    // check if valid email
     // retrieve ID from user email
     let id = uuid(req.body.email, NAMESPACE);
     userDB.get(id, function (err, user) {
         if (err) {
             if (err.error === 'not_found') {
-                res.send(`user not found`);
+                res.send(`user-not-found`);
                 return;
             } else {
-                res.send(`login error`);
+                res.send(`login-error`);
                 return;
-            } 
+            }
         }
         let validPW = isValidPassword(req.body.password, user.password);
         if (!validPW) {
-            res.send(`incorrect password`);
+            res.send(`incorrect-password`);
             return;
         }
         if (validPW) {
             res.send({
-                message: `login success`,
+                message: `login-success`,
                 user: {
                     _id: user._id,
                     name: user.name,
@@ -167,7 +139,7 @@ app.post('/login', (req, res) => {
             });
             return;
         }
-        res.send(`login error`)
+        res.send(`login-error`)
     });
 }
 );

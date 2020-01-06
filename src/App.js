@@ -48,7 +48,7 @@ function App() {
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
 
-  // check if logged in via local
+  // check if server is running
   useEffect(() => {
     axios.get(`${API_URL}/test`).then((res) => {
       console.log(res);

@@ -1,6 +1,7 @@
 .login-form {
     display: flex;
     flex-direction: column;
+    width: 250px;
 }
 
 .err-msg {
@@ -26,8 +27,4 @@ input {
 
 .login-btn {
     margin-top: 2rem;
-}
-
-#new-user {
-    margin-top: 3rem;
 }

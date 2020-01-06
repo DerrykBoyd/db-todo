@@ -10,6 +10,8 @@ const API_URL = process.env.NODE_ENV === 'development' ?
     'http://localhost:4000' :
     'https://db-todo.duckdns.org/api';
 
+const validEmailRegex = RegExp(/[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/);
+
 export default function Login(props) {
 
     useEffect(() => {
@@ -18,6 +20,8 @@ export default function Login(props) {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [emailErr, setEmailErr] = useState('');
+    const [passwordErr, setPasswordErr] = useState('');
     let history = useHistory();
 
     const handleInputChange = (event) => {
@@ -26,37 +30,52 @@ export default function Login(props) {
     }
 
     const handleSubmit = (event) => {
-        // send login cred. to server
-        axios.post(`${API_URL}/login`, {
+        event.preventDefault();
+        setEmailErr('');
+        setPasswordErr('');
+        // check for blank fields and valid email - set errors
+        if (!email.length) setEmailErr('Required');
+        else if (!validEmailRegex.test(email)) setEmailErr('Please enter a valid email');
+        else if (!password.length) setPasswordErr('Required');
+        // if no errors send login cred. to server
+        else {
+            axios.post(`${API_URL}/login`, {
                 email: email,
                 password: password
-        }).then(res => { // handle server response
-            // login local user if success
-            if (res.data.message === 'login success'){
-                console.log('handle user here');
-                props.loginLocal(res.data.user, history);
-            }
-            console.log(res)
-        })
-        event.preventDefault();
+            }).then(res => { // handle server response
+                console.log(res)
+                // login local user if success
+                if (res.data.message === 'login-success') {
+                    props.loginLocal(res.data.user, history);
+                } else if (res.data === 'user-not-found') {
+                    setEmailErr('Email not registered');
+                } else if (res.data === 'incorrect-password') {
+                    setPasswordErr('Incorrect Password');
+                } else {
+                    setPasswordErr('Login Error - Please try again')
+                }
+            })
+        }
     }
 
     return (
         <div className={'App'}>
             <Header />
             <h3>Login</h3>
-            <form className='login-form' onSubmit={handleSubmit}>
+            <form className='login-form' noValidate>
                 <label htmlFor='email'>Email</label>
                 <input type="email" name="email" autoComplete='on' value={email}
                     onChange={handleInputChange} />
+                {emailErr.length > 0 && <span className='err-msg'>{emailErr}</span>}
                 <label htmlFor='password'>Password</label>
                 <input type="password" name="password" autoComplete='on'
                     value={password} onChange={handleInputChange} />
-                <button className='mat-btn login-btn'>
+                {passwordErr.length > 0 && <span className='err-msg'>{passwordErr}</span>}
+                <button className='mat-btn login-btn' onClick={handleSubmit}>
                     Login
                         </button>
             </form>
-            <div id='new-user'>
+            <div className='form-link'>
                 <p>Don't have an account?</p>
                 <Link to='/signup'>Register Here</Link>
             </div>
