@@ -64,7 +64,7 @@ export default function TodoItem(props) {
                 value={props.item.todo}>
             </input>
             <div className='overflow-icons'>
-                <i className={`material-icons md-18 md-light md-inactive ${showDrag ? null : "hidden"}`}
+                <i className={`material-icons md-18 md-light ${props.checked ? "md-inactive" : ''} ${showDrag ? null : "hidden"}`}
                     onClick={showMenu}>more_vert</i>
                 <i className={`material-icons md-18 ${showClose ? '' : "hidden"}`}
                     onClick={hideClose}>close</i>
@@ -79,7 +79,7 @@ export default function TodoItem(props) {
                     </div>
                 </div>
             </div>
-            <i className={`material-icons md-light md-inactive handle`}
+            <i className={`material-icons md-light handle ${props.checked ? "md-inactive" : ''}`}
             >drag_handle</i>
         </div>
     );

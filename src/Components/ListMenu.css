@@ -1,0 +1,14 @@
+.list-menu {
+    height: 60%;
+    width: calc(100% - 4rem - 4px);
+    max-width: calc(400px - 2rem - 4px);
+    border: solid 2px #757575;
+    border-radius: 4px;
+    position: fixed;
+    bottom: calc(4rem - 2px);
+    background-color: #000;
+}
+
+#list-menu-title {
+    text-decoration: underline;
+}

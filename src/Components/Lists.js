@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import TodoList from './TodoList';
 import TodoAdd from './TodoAdd';
+import ListMenu from './ListMenu';
 
 // component to display user lists
 export default function Lists(props) {
@@ -9,6 +10,13 @@ export default function Lists(props) {
     useEffect(() => {
         document.title = 'Todo-My Lists'
     }, []);
+
+    const [showLists, setShowLists] = useState(false);
+
+    const toggleLists = () => {
+        let cur = showLists;
+        setShowLists(!cur);
+    }
 
     return (
         <div className={`App Lists`}>
@@ -29,8 +37,13 @@ export default function Lists(props) {
             <TodoAdd
                 newItem={props.newItem}
                 handleNewChange={props.handleNewChange}
-                handleLocalAdd={props.handleLocalAdd}>
+                handleLocalAdd={props.handleLocalAdd}
+                showLists={showLists}
+                toggleLists={toggleLists}>
             </TodoAdd>
+            {showLists &&
+                <ListMenu />
+            }
         </div>
     )
 }
