@@ -3,6 +3,8 @@ import './Login.css';
 import Header from './Header';
 import { Link, useHistory } from 'react-router-dom';
 import axios from 'axios';
+import { LoadingOverlay, Loader } from 'react-overlay-loader';
+import 'react-overlay-loader/styles.css';
 
 const API_URL = process.env.NODE_ENV === 'development' ?
     'http://localhost:4000' :
@@ -46,7 +48,7 @@ export default function Login(props) {
         setPasswordRptErr('');
     }
 
-    const handleSubmit = (event) => { //TODO
+    const handleSubmit = (event) => {
         event.preventDefault();
         // reset errors
         resetErrors();
@@ -61,8 +63,11 @@ export default function Login(props) {
         else if (form.password !== form.passwordRpt) setPasswordRptErr('Passwords do not match')
         // if no errors send login cred. to server & handle response
         else {
+            // set loading spinner for server response
+            props.setLoading(true);
             axios.post(`${API_URL}/register`, form).then(res => {
                 // handle server response
+                props.setLoading(false);
                 // login local user if signup successful
                 if (res.data.message === 'signup-success') {
                     props.loginLocal(res.data.user, history);
@@ -77,39 +82,42 @@ export default function Login(props) {
     }
 
     return (
-        <div className={'App'}>
-            <Header />
-            <h3>Sign Up</h3>
-            <form className='login-form' noValidate>
-                <label htmlFor='name'>Name</label>
-                <input type="text" name="name" autoComplete='on' value={form.name}
-                    onChange={handleInputChange} />
-                {nameErr.length > 0 && <span className='err-msg'>{nameErr}</span>}
-                <label htmlFor='email'>Email</label>
-                <input type="email" name="email" autoComplete='on' value={form.email}
-                    onChange={handleInputChange} />
-                {emailErr.length > 0 && <span className='err-msg'>{emailErr}</span>}
-                <label htmlFor='password'>Password</label>
-                <input type="password" name="password" autoComplete='on' value={form.password}
-                    onChange={handleInputChange} />
-                {passwordErr.length > 0 && <span className='err-msg'>{passwordErr}</span>}
-                <label htmlFor='passwordRpt'>Repeat Password</label>
-                <input type="password" name="passwordRpt" autoComplete='on' value={form.passwordRpt}
-                    onChange={handleInputChange} />
-                {passwordRptErr.length > 0 && <span className='err-msg'>{passwordRptErr}</span>}
-                <button className='mat-btn login-btn' onClick={handleSubmit}>
-                    Register
-                </button>
-                {serverErr.length > 0 &&
-                    <div className='server-err'>
-                        <p>{serverErr}</p>
-                    </div>
-                }
-            </form>
-            <div className='form-link'>
-                <p>Already have an account?</p>
-                <Link to='/login'>Login Here</Link>
+        <LoadingOverlay>
+            <div className={'App'}>
+                <Header />
+                <h3>Sign Up</h3>
+                <form className='login-form' noValidate>
+                    <label htmlFor='name'>Name</label>
+                    <input type="text" name="name" autoComplete='on' value={form.name}
+                        onChange={handleInputChange} />
+                    {nameErr.length > 0 && <span className='err-msg'>{nameErr}</span>}
+                    <label htmlFor='email'>Email</label>
+                    <input type="email" name="email" autoComplete='on' value={form.email}
+                        onChange={handleInputChange} />
+                    {emailErr.length > 0 && <span className='err-msg'>{emailErr}</span>}
+                    <label htmlFor='password'>Password</label>
+                    <input type="password" name="password" autoComplete='on' value={form.password}
+                        onChange={handleInputChange} />
+                    {passwordErr.length > 0 && <span className='err-msg'>{passwordErr}</span>}
+                    <label htmlFor='passwordRpt'>Repeat Password</label>
+                    <input type="password" name="passwordRpt" autoComplete='on' value={form.passwordRpt}
+                        onChange={handleInputChange} />
+                    {passwordRptErr.length > 0 && <span className='err-msg'>{passwordRptErr}</span>}
+                    <button className='mat-btn login-btn' onClick={handleSubmit}>
+                        Register
+                    </button>
+                    {serverErr.length > 0 &&
+                        <div className='server-err'>
+                            <p>{serverErr}</p>
+                        </div>
+                    }
+                </form>
+                <div className='form-link'>
+                    <p>Already have an account?</p>
+                    <Link to='/login'>Login Here</Link>
+                </div>
             </div>
-        </div>
+            <Loader loading={props.loading} />
+        </LoadingOverlay>
     )
 }

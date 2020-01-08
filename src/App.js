@@ -47,6 +47,7 @@ function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [loading, setLoading] = useState(false);
 
   // check if server is running
   useEffect(() => {
@@ -325,20 +326,32 @@ function App() {
     <Router>
       <Route path="/" exact render={() => {
         if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <Home 
+        return <Home
           resGoogle={resGoogle}
-          respGoogleFail={respGoogleFail}/>
+          respGoogleFail={respGoogleFail} />
       }} />
       <Route path="/login" render={() => {
         if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <Login loginLocal={loginLocal} />
+        return (
+          <Login
+            loginLocal={loginLocal}
+            loading={loading}
+            setLoading={setLoading}
+          />
+        )
       }} />
       <Route path="/signup" render={() => {
         if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <SignUp loginLocal={loginLocal} />
+        return (
+          <SignUp
+            loginLocal={loginLocal}
+            loading={loading}
+            setLoading={setLoading}
+          />
+        )
       }} />
       <PrivateRoute path="/lists" auth={loggedIn} >
-        <Lists 
+        <Lists
           handleLogout={handleLogout}
           loggedIn={loggedIn}
           userImg={userImg}
@@ -352,7 +365,7 @@ function App() {
           deleteItem={deleteItem}
           newItem={newItem}
           handleNewChange={handleNewChange}
-          />
+        />
       </PrivateRoute>
     </Router>
   )
