@@ -20,6 +20,10 @@
 .app-title {
     font-size: 1.75rem;
     margin: 0.75rem;
+    width: 185px;
+    background-color: black;
+    color: white;
+    text-align: center;
 }
 
 .profile-img {

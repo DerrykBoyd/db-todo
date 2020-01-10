@@ -39,9 +39,11 @@ function App() {
   const [localDB, setLocalDB] = useState(null);
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
-  const [currentList, setCurrentList] = useState('default');
+  const [currentList, setCurrentList] = useState(localStorage.getItem('currentList') || 'My List');
+  const [currentListID, setCurrentListID] = useState(localStorage.getItem('currentListID') || '');
+  const [lists, setLists] = useState([]);
   const [items, setItems] = useState([]);
-  const [newItem, setNewItem] = useState("");
+  const [newItem, setNewItem] = useState('');
   const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
   const [userID, setUserID] = useState(localStorage.getItem('userID') || '');
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
@@ -60,11 +62,19 @@ function App() {
   const getData = useCallback(() => {
     if (!remoteDB) return;
     remoteDB.allDocs({ include_docs: true }).then(res => {
-      let filteredRes = res.rows.filter(row => row.doc.listName === currentList);
-      if (filteredRes.length) setItems(filteredRes[0].doc.todoItems);
+      let fetchedLists = [];
+      res.rows.forEach(row => {
+        fetchedLists.push(row.doc);
+        if (row.doc.default) {
+          setItems(row.doc.todoItems);
+          setCurrentList(row.doc.listName);
+          setCurrentListID(row.doc._id);
+        }
+      })
       setLoadingDB(false);
+      setLists(fetchedLists);
     });
-  }, [remoteDB, currentList]);
+  }, [remoteDB]);
 
   // set up local DB for each user
   useEffect(() => {
@@ -102,7 +112,9 @@ function App() {
     localStorage.setItem('userEmail', userEmail)
     localStorage.setItem('userImg', userImg)
     localStorage.setItem('userName', userName)
-  }, [loggedIn, userID, userEmail, userImg, userName])
+    localStorage.setItem('currentList', currentList)
+    localStorage.setItem('currentListID', currentListID)
+  }, [loggedIn, userID, userEmail, userImg, userName, currentList, currentListID])
 
   // This effect handles changes to the db from other clients
   useEffect(() => {
@@ -112,9 +124,16 @@ function App() {
     let dbSync;
 
     const handleRemoteUpdate = (list) => {
+      // set the todo items
       let newItems = [...items];
       newItems = list.todoItems;
       setItems(newItems);
+      // set the list name
+      let newLists = [...lists];
+      newLists.forEach(cur => {
+        if (cur._id === list.id) cur.listName = list.listName;
+      })
+      setLists(newLists);
     }
 
     if (loggedIn === 'true' && remoteDB && localDB) {
@@ -143,7 +162,7 @@ function App() {
     return () => {
       if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB])
+  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB, lists])
 
   async function addItem(item) {
     console.log(item);
@@ -152,7 +171,7 @@ function App() {
     localDB.allDocs({ include_docs: true }).then(res => {
       // TODO figure out how to use the list ID as the currentList var and not
       // the list name as that can be duplicated
-      let listArr = res.rows.filter(row => row.doc.listName === currentList);
+      let listArr = res.rows.filter(row => row.doc._id === currentListID);
       let newList = {}
       if (listArr.length) {
         newList = listArr[0].doc;
@@ -162,9 +181,16 @@ function App() {
       newItems.unshift(item);
       if (!newList._id) {
         newList._id = new Date().toISOString();
+        setCurrentListID(newList._id);
         newList.listName = currentList;
+        newList.default = true;
       }
       newList.todoItems = newItems;
+      if (!lists.find(list => list._id === newList._id)) {
+        let newLists = [...lists];
+        newLists.push(newList);
+        setLists(newLists);
+      }
       localDB.put(newList);
     })
   }
@@ -180,7 +206,13 @@ function App() {
       completed: false,
     };
     addItem(itemToAdd);
-    setItems([itemToAdd, ...items]);
+    let newItems = [itemToAdd, ...items];
+    setItems(newItems);
+    let newLists = [...lists];
+    newLists.forEach(list => {
+      if (list._id === currentListID) list.todoItems = newItems;
+    })
+    setLists(newLists);
     window.scrollTo({
       top: 0,
       left: 0,
@@ -196,6 +228,18 @@ function App() {
     let changeIndex = newItems.findIndex(el => el._id === e.target.id);
     newItems[changeIndex].todo = e.target.value;
     setItems(newItems);
+  }
+
+  // handle list name change
+  const handleListChange = (e) => {
+    let newListName = e.target.value;
+    setCurrentList(newListName);
+    // update the local DB
+    if (!localDB) return;
+    localDB.get(currentListID).then(doc => {
+      doc.listName = newListName;
+      localDB.put(doc).catch(e => console.log(e))
+    }).catch(e => console.log(e))
   }
 
   // delete item from delete button
@@ -365,6 +409,10 @@ function App() {
           deleteItem={deleteItem}
           newItem={newItem}
           handleNewChange={handleNewChange}
+          currentList={currentList}
+          handleListChange={handleListChange}
+          lists={lists}
+          setLists={setLists}
         />
       </PrivateRoute>
     </Router>

@@ -23,7 +23,9 @@ export default function Lists(props) {
             <Header
                 handleLogout={props.handleLogout}
                 loggedIn={props.loggedIn}
-                userImg={props.userImg} />
+                userImg={props.userImg}
+                currentList={props.currentList}
+                handleListChange={props.handleListChange} />
             <TodoList
                 items={props.items}
                 setItems={props.setItems}
