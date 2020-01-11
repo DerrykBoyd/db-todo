@@ -39,7 +39,7 @@ function App() {
   const [localDB, setLocalDB] = useState(null);
   const [remoteDB, setRemoteDB] = useState(null);
   const [loadingDB, setLoadingDB] = useState(true);
-  const [currentList, setCurrentList] = useState(localStorage.getItem('currentList') || 'My List');
+  const [currentListName, setCurrentListName] = useState(localStorage.getItem('currentList') || 'My List');
   const [currentListID, setCurrentListID] = useState(localStorage.getItem('currentListID') || '');
   const [lists, setLists] = useState([]);
   const [items, setItems] = useState([]);
@@ -67,7 +67,7 @@ function App() {
         fetchedLists.push(row.doc);
         if (row.doc.default) {
           setItems(row.doc.todoItems);
-          setCurrentList(row.doc.listName);
+          setCurrentListName(row.doc.listName);
           setCurrentListID(row.doc._id);
         }
       })
@@ -112,9 +112,9 @@ function App() {
     localStorage.setItem('userEmail', userEmail)
     localStorage.setItem('userImg', userImg)
     localStorage.setItem('userName', userName)
-    localStorage.setItem('currentList', currentList)
+    localStorage.setItem('currentList', currentListName)
     localStorage.setItem('currentListID', currentListID)
-  }, [loggedIn, userID, userEmail, userImg, userName, currentList, currentListID])
+  }, [loggedIn, userID, userEmail, userImg, userName, currentListName, currentListID])
 
   // This effect handles changes to the db from other clients
   useEffect(() => {
@@ -124,15 +124,29 @@ function App() {
     let dbSync;
 
     const handleRemoteUpdate = (list) => {
+      // set the list name or delete list
+      let newLists = [...lists];
+      // handle remote list delete
+      if (list._deleted) {
+        let ind = newLists.findIndex(el => el._id === list._id);
+        if (ind !== -1) newLists.splice(ind, 1);
+        setLists(newLists);
+        return;
+      };
+      // add if a new list
+      if (!newLists.find(el => el._id === list._id)) {
+        newLists.push(list);
+        setLists(newLists);
+        return;
+      }
+      // update if existing list
+      newLists.forEach(cur => {
+        if (cur._id === list.id) cur.listName = list.listName;
+      })
       // set the todo items
       let newItems = [...items];
       newItems = list.todoItems;
       setItems(newItems);
-      // set the list name
-      let newLists = [...lists];
-      newLists.forEach(cur => {
-        if (cur._id === list.id) cur.listName = list.listName;
-      })
       setLists(newLists);
     }
 
@@ -182,7 +196,7 @@ function App() {
       if (!newList._id) {
         newList._id = new Date().toISOString();
         setCurrentListID(newList._id);
-        newList.listName = currentList;
+        newList.listName = currentListName;
         newList.default = true;
       }
       newList.todoItems = newItems;
@@ -233,7 +247,12 @@ function App() {
   // handle list name change
   const handleListChange = (e) => {
     let newListName = e.target.value;
-    setCurrentList(newListName);
+    setCurrentListName(newListName);
+    let newLists = [...lists];
+    newLists.forEach(list => {
+      if (list._id === currentListID) list.listName = newListName;
+    })
+    setLists(newLists);
     // update the local DB
     if (!localDB) return;
     localDB.get(currentListID).then(doc => {
@@ -257,7 +276,7 @@ function App() {
   async function updateItems(newItems) {
     if (!localDB) return // no local DB
     localDB.allDocs({ include_docs: true }).then(res => {
-      let curList = res.rows.find(el => el.doc.listName === currentList);
+      let curList = res.rows.find(el => el.doc.listName === currentListName);
       localDB.get(curList.id).then(doc => {
         doc.todoItems = newItems;
         localDB.put(doc).catch(e => console.error(e))
@@ -366,6 +385,23 @@ function App() {
     window.location.reload(true);
   }
 
+  function updateLists(newList) {
+    let newLists = [...lists, newList];
+    setLists(newLists);
+    localDB.put(newList);
+  }
+
+  function deleteList(id) {
+    let newLists = [...lists];
+    let ind = newLists.findIndex(el => el._id === id);
+    if (ind !== -1) newLists.splice(ind, 1);
+    setLists(newLists);
+    localDB.get(id).then(doc => {
+      return localDB.remove(doc);
+    }).then(res => console.log(res))
+      .catch(e => console.log(e));
+  }
+
   return (
     <Router>
       <Route path="/" exact render={() => {
@@ -409,10 +445,11 @@ function App() {
           deleteItem={deleteItem}
           newItem={newItem}
           handleNewChange={handleNewChange}
-          currentList={currentList}
+          currentListName={currentListName}
           handleListChange={handleListChange}
           lists={lists}
-          setLists={setLists}
+          updateLists={updateLists}
+          deleteList={deleteList}
         />
       </PrivateRoute>
     </Router>

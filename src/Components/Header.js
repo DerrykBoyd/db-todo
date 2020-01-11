@@ -55,7 +55,7 @@ export default function Header(props) {
             <input 
                 className="app-title"
                 onChange={props.handleListChange}
-                value={props.currentList} />
+                value={props.currentListName} />
             {props.loggedIn === "true" && profile}
             <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
                 <div className="profile-menu scale-in-tr" ref={ref}>

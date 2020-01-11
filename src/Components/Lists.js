@@ -24,7 +24,7 @@ export default function Lists(props) {
                 handleLogout={props.handleLogout}
                 loggedIn={props.loggedIn}
                 userImg={props.userImg}
-                currentList={props.currentList}
+                currentListName={props.currentListName}
                 handleListChange={props.handleListChange} />
             <TodoList
                 items={props.items}
@@ -44,7 +44,11 @@ export default function Lists(props) {
                 toggleLists={toggleLists}>
             </TodoAdd>
             {showLists &&
-                <ListMenu />
+                <ListMenu 
+                    lists={props.lists}
+                    updateLists={props.updateLists}
+                    deleteList={props.deleteList}
+                />
             }
         </div>
     )
