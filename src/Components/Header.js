@@ -52,10 +52,11 @@ export default function Header(props) {
             <Link to='/'>
                 <img src={logo} className="App-logo" alt="logo" />
             </Link>
-            <input 
+            {!props.loggedIn && <h1 className='app-title'>dboydgit Todo</h1>}
+            {props.loggedIn && <input 
                 className="app-title"
                 onChange={props.handleListChange}
-                value={props.currentListName} />
+                value={props.currentListName} />}
             {props.loggedIn === "true" && profile}
             <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
                 <div className="profile-menu scale-in-tr" ref={ref}>

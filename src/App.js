@@ -50,6 +50,15 @@ function App() {
   const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [loading, setLoading] = useState(false);
+  const [showLists, setShowLists] = useState(false);
+
+  // create a new list
+  function createList(listName = 'New List') {
+    this._id = new Date().toISOString();
+    this.default = false;
+    this.listName = listName;
+    this.todoItems = [];
+  }
 
   // check if server is running
   useEffect(() => {
@@ -65,16 +74,25 @@ function App() {
       let fetchedLists = [];
       res.rows.forEach(row => {
         fetchedLists.push(row.doc);
-        if (row.doc.default) {
-          setItems(row.doc.todoItems);
-          setCurrentListName(row.doc.listName);
-          setCurrentListID(row.doc._id);
-        }
+        // TODO add functionality for default list - for now just load first list
+        // if (row.doc.default) {
+        //   setItems(row.doc.todoItems);
+        //   setCurrentListName(row.doc.listName);
+        //   setCurrentListID(row.doc._id);
+        // }
       })
+      if (!fetchedLists.length) {
+        let blankList = new createList();
+        fetchedLists.push(blankList);
+        localDB.put(blankList);
+      }
+      setItems(fetchedLists[0].todoItems);
+      setCurrentListName(fetchedLists[0].listName);
+      setCurrentListID(fetchedLists[0]._id);
       setLoadingDB(false);
       setLists(fetchedLists);
     });
-  }, [remoteDB]);
+  }, [remoteDB, localDB]);
 
   // set up local DB for each user
   useEffect(() => {
@@ -141,12 +159,14 @@ function App() {
       }
       // update if existing list
       newLists.forEach(cur => {
-        if (cur._id === list.id) cur.listName = list.listName;
+        if (cur._id === list._id) cur.listName = list.listName;
       })
-      // set the todo items
-      let newItems = [...items];
-      newItems = list.todoItems;
-      setItems(newItems);
+      // set the todo items if current list in state
+      if (currentListID === list._id) {
+        let newItems = [...items];
+        newItems = list.todoItems;
+        setItems(newItems);
+      }
       setLists(newLists);
     }
 
@@ -176,7 +196,7 @@ function App() {
     return () => {
       if (loggedIn === 'true') dbSync.cancel();
     };
-  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB, lists])
+  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB, lists, currentListID])
 
   async function addItem(item) {
     console.log(item);
@@ -194,9 +214,8 @@ function App() {
       let newItems = newList.todoItems || [];
       newItems.unshift(item);
       if (!newList._id) {
-        newList._id = new Date().toISOString();
+        newList = new createList(currentListName)
         setCurrentListID(newList._id);
-        newList.listName = currentListName;
         newList.default = true;
       }
       newList.todoItems = newItems;
@@ -392,14 +411,39 @@ function App() {
   }
 
   function deleteList(id) {
-    let newLists = [...lists];
-    let ind = newLists.findIndex(el => el._id === id);
-    if (ind !== -1) newLists.splice(ind, 1);
-    setLists(newLists);
+    // local changes if only one list
+    debugger
+    if (lists.length === 1) {
+      let blankList = new createList('New List');
+      setLists([blankList]);
+      setCurrentListID(blankList._id);
+      setItems(blankList.todoItems);
+      setCurrentListName(blankList.listName);
+      setShowLists(false);
+      localDB.put(blankList);
+    } else { // local changes if more than one list
+      let newLists = [...lists];
+      let ind = newLists.findIndex(el => el._id === id);
+      // switch to view a different list before deleting
+      if (ind !== 0) switchList(lists[ind - 1]._id);
+      else switchList(lists[ind + 1]._id);
+      // delete list from state
+      if (ind !== -1) newLists.splice(ind, 1);
+      setLists(newLists);
+    }
+    // delete from DB
     localDB.get(id).then(doc => {
       return localDB.remove(doc);
     }).then(res => console.log(res))
       .catch(e => console.log(e));
+  }
+
+  function switchList(id) {
+    // get the index of the list to switch to
+    let ind = lists.findIndex(el => el._id === id);
+    setCurrentListID(id);
+    setItems(lists[ind].todoItems);
+    setCurrentListName(lists[ind].listName);
   }
 
   return (
@@ -450,6 +494,9 @@ function App() {
           lists={lists}
           updateLists={updateLists}
           deleteList={deleteList}
+          switchList={switchList}
+          showLists={showLists}
+          setShowLists={setShowLists}
         />
       </PrivateRoute>
     </Router>

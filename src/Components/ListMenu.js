@@ -37,7 +37,9 @@ export default function ListMenu(props) {
 
     function switchList(e) {
         console.log('TODO - switch list on click');
-        console.log(e.target.id)
+        let id = (e.currentTarget.id);
+        props.switchList(id);
+        props.setShowLists(false);
     }
 
     function showNewListInput() {

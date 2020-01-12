@@ -11,11 +11,9 @@ export default function Lists(props) {
         document.title = 'Todo-My Lists'
     }, []);
 
-    const [showLists, setShowLists] = useState(false);
-
     const toggleLists = () => {
-        let cur = showLists;
-        setShowLists(!cur);
+        let cur = props.showLists;
+        props.setShowLists(!cur);
     }
 
     return (
@@ -40,14 +38,16 @@ export default function Lists(props) {
                 newItem={props.newItem}
                 handleNewChange={props.handleNewChange}
                 handleLocalAdd={props.handleLocalAdd}
-                showLists={showLists}
+                showLists={props.showLists}
                 toggleLists={toggleLists}>
             </TodoAdd>
-            {showLists &&
+            {props.showLists &&
                 <ListMenu 
                     lists={props.lists}
                     updateLists={props.updateLists}
                     deleteList={props.deleteList}
+                    switchList={props.switchList}
+                    setShowLists={props.setShowLists}
                 />
             }
         </div>
