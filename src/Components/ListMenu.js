@@ -75,7 +75,6 @@ export default function ListMenu(props) {
     return (
         <div className={`list-menu slide-in-bottom`}>
             <h3 id='list-menu-title'>My Lists</h3>
-            <p>Todo - Switch lists on click!</p>
             <ListList lists={props.lists}
                 switchList={switchList}
                 deleteList={props.deleteList}
