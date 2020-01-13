@@ -160,6 +160,7 @@ function App() {
       // update if existing list
       newLists.forEach(cur => {
         if (cur._id === list._id) cur.listName = list.listName;
+        if (list._id === currentListID) setCurrentListName(list.listName);
       })
       // set the todo items if current list in state
       if (currentListID === list._id) {
