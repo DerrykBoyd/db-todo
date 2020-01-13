@@ -5,6 +5,7 @@ import { Link, useHistory } from 'react-router-dom';
 import axios from 'axios';
 import { LoadingOverlay, Loader } from 'react-overlay-loader';
 import 'react-overlay-loader/styles.css';
+import Credits from './Credits';
 
 const API_URL = process.env.NODE_ENV === 'development' ?
     'http://localhost:4000' :
@@ -116,6 +117,7 @@ export default function Login(props) {
                     <p>Already have an account?</p>
                     <Link to='/login'>Login Here</Link>
                 </div>
+                <Credits />
             </div>
             <Loader loading={props.loading} />
         </LoadingOverlay>

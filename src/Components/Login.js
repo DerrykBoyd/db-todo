@@ -5,6 +5,7 @@ import { Link, useHistory } from 'react-router-dom';
 import axios from 'axios';
 import { LoadingOverlay, Loader } from 'react-overlay-loader';
 import 'react-overlay-loader/styles.css';
+import Credits from './Credits';
 
 axios.defaults.withCredentials = true;
 
@@ -94,6 +95,7 @@ export default function Login(props) {
                     <p>Don't have an account?</p>
                     <Link to='/signup'>Register Here</Link>
                 </div>
+                <Credits />
                 <Loader loading={props.loading} />
             </div>
         </LoadingOverlay>

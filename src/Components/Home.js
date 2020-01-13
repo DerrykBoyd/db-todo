@@ -5,6 +5,7 @@ import {
 } from "react-router-dom";
 import GoogleLogin from 'react-google-login';
 import Header from './Header';
+import Credits from './Credits';
 
 // Home componemt
 export default function Home(props) {
@@ -43,6 +44,7 @@ export default function Home(props) {
             cookiePolicy={'single_host_origin'}
           />
         </div>
+        <Credits />
       </div>
     )
   }

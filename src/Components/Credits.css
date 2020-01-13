@@ -1,0 +1,10 @@
+#credits {
+    position: fixed;
+    bottom: 2rem;
+    display: flex;
+    align-items: center;
+}
+
+#github-link {
+    margin: 0 0.5rem;
+}
