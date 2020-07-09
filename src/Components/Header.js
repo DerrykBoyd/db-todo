@@ -52,7 +52,7 @@ export default function Header(props) {
             <Link to='/'>
                 <img src={logo} className="App-logo" alt="logo" />
             </Link>
-            {!props.loggedIn && <h1 className='app-title'>dboydgit Todo</h1>}
+            {!props.loggedIn && <h1 className='app-title'>dboydgit To-Do</h1>}
             {props.loggedIn && <input 
                 className="app-title"
                 onChange={props.handleListChange}
