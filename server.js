@@ -1,9 +1,10 @@
+import {v5 as uuid} from 'uuid';
+
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
-const uuid = require('uuid/v5');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 

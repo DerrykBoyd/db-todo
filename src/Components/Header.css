@@ -1,7 +1,7 @@
 .App-header {
     position: fixed;
     top: 0;
-    height: 3rem;
+    min-height: 3rem;
     width: 100%;
     display: flex;
     align-items: center;
@@ -9,7 +9,6 @@
     color: white;
     border-bottom: solid 1px grey;
     background-color: #000;
-    padding: 0.5rem 0;
 }
 
 .App-logo {
@@ -20,7 +19,6 @@
 .app-title {
     font-size: 1.75rem;
     margin: 0.75rem;
-    width: 185px;
     background-color: black;
     color: white;
     text-align: center;
