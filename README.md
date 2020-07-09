@@ -1,8 +1,10 @@
-This is a sycing to-do list web app, built using React and using pouchDB and couchDB to store user data. This app will instatnly sync between devices.
+db-todo is a sycing to-do list web application, built with [React](https://reactjs.org/).
 
-CouchDB should be running on the default port 5984 on the host machine for syncing to work.
+The backend is run on [Node.js](https://nodejs.org/) and uses [PouchDB](https://pouchdb.com/) and [CouchDB](http://couchdb.apache.org/) to store and sync user data. This app will instatnly sync changes between devices.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The app is deployed using [CircleCI](https://circleci.com/) for continuous integration.
+
+You can see the app in production at [https://db-todo.duckdns.org/](https://db-todo.duckdns.org/)
 
 ## Available Scripts
 
