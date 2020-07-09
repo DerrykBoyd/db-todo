@@ -33,7 +33,7 @@ jobs: # a collection of steps
       - run:
           name: Deploy Over SSH
           command: |
-            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git checkout pouchDB-prod && git pull && ./build-install.sh"
+            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git pull && ./build-install.sh"
 workflows:
   version: 2.1
   build-and-deploy:
