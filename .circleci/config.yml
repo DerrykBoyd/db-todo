@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+  node: circleci/node@3.0.1
 jobs: # a collection of steps
   build: # runs not using Workflows must have a `build` job as entry point
     working_directory: ~/db-todo
@@ -34,7 +36,7 @@ jobs: # a collection of steps
           command: |
             ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git checkout master && git pull && npm install && npm run build && ./build-install.sh"
 workflows:
-  version: 2
+  version: 2.1
   build-and-deploy:
     jobs:
       - build:
