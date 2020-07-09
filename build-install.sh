@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PATH="/root/.nvm/versions/node/v13.0.1/bin:$PATH"
+PATH="/root/.nvm/versions/node/v14.5.0/bin:$PATH"
 
 set +x
 

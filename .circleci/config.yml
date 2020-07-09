@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  node: circleci/node@3.0.1
 jobs: # a collection of steps
   build: # runs not using Workflows must have a `build` job as entry point
     working_directory: ~/db-todo
@@ -24,9 +22,10 @@ jobs: # a collection of steps
       - run: # run tests
           name: test
           command: npm test
-      - run: #run build
-          name: build
-          command: npm run build
+      # do not need to run the build job here as will run during deploy
+      # - run: #run build
+      #     name: build
+      #     command: npm run build
   deploy:
     machine:
       enabled: true
@@ -34,7 +33,7 @@ jobs: # a collection of steps
       - run:
           name: Deploy Over SSH
           command: |
-            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git checkout master && git pull && ./build-install.sh"
+            ssh root@159.203.59.1 "cd /root/projects/db-todo/ && git pull && ./build-install.sh"
 workflows:
   version: 2.1
   build-and-deploy:
@@ -42,10 +41,10 @@ workflows:
       - build:
           filters:
             branches:
-              only: master
+              only: pouchDB-prod
       - deploy:
           requires:
             - build
           filters:
             branches:
-              only: master
+              only: pouchDB-prod
