@@ -2,13 +2,17 @@
 
 **dboydgit To-Do** is a sycing to-do list web application, built with [React](https://reactjs.org/).
 
-The backend is run on [Node.js](https://nodejs.org/) and uses [PouchDB](https://pouchdb.com/) and [CouchDB](http://couchdb.apache.org/) to store and sync user data. This app will instantly sync changes between devices.
+The lastest version of the application is uses [Google Firebase](https://firebase.google.com/) as a serverless backend.
 
-The app is deployed using [CircleCI](https://circleci.com/) for continuous integration.
+You can see the app in production at *TODO-Insert github pages link when hosted*.
 
-You can see the app in production at [https://db-todo.duckdns.org/](https://db-todo.duckdns.org/)
+A previous version of this application was built with a [Node.js](https://nodejs.org/) backend and used [PouchDB](https://pouchdb.com/) and [CouchDB](http://couchdb.apache.org/) to store and sync data. The backend was hosted on a [Digital Ocean](https://www.digitalocean.com/) droplet and deployment was managed with continuous integration through [CircleCI](https://circleci.com/).
+
+The previous version can still be viewed at [https://db-todo.duckdns.org/](https://db-todo.duckdns.org/)
 
 ### Available Scripts
+
+This app was bootstrapped with [Create React App](https://github.com/facebook/create-react-app)
 
 In the project directory, you can run:
 

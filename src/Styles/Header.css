@@ -11,6 +11,14 @@
     background-color: #000;
 }
 
+.header-content {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
 .App-logo {
     height: 3rem;
     margin-right: 1rem;
@@ -36,8 +44,8 @@
 }
 
 .profile-menu-wrap {
-    position: absolute;
-    transform: translateX(1.5rem);
+    position: relative;
+    transform: translateX(-125%);
 }
 
 .profile-menu {

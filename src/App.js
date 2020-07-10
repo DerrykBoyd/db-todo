@@ -1,56 +1,120 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Route,
-  Redirect
+  Redirect,
+  Switch
 } from "react-router-dom";
-import './App.css';
+import { ToastContainer, cssTransition, toast } from 'react-toastify';
+
+import * as serviceWorker from './serviceWorker';
+
+// Firebase
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
+
+// styles
+import './Styles/App.css';
 import './Styles/animations.css';
-import PouchDB from 'pouchdb';
-import axios from 'axios';
-import Login from './Components/Login';
-import SignUp from './Components/SignUp';
+
+// Components
 import Home from './Components/Home';
 import Lists from './Components/Lists';
+import ServiceWorkerToast from './Components/Toasts/ServiceWorkerToast';
 
-axios.defaults.withCredentials = true;
+// assets
+import defaultProfile from './assets/profile-avatars/050.svg';
 
-function PrivateRoute({ children, ...rest }) {
-  return (
-    <Route
-      {...rest}
-      render={(props) => localStorage.getItem('loggedIn') === 'true'
-        ? children
-        : <Redirect to={{ pathname: '/', state: { from: props.location } }} />}
-    />
-  )
+const Slide = cssTransition({
+  enter: 'toast-in',
+  exit: 'toast-out',
+  duration: [500, 100]
+})
+
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.REACT_APP_FIREBASE_DB_URL,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MSG_SEND_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+};
+
+const uiConfig = {
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+    firebase.auth.EmailAuthProvider.PROVIDER_ID,
+  ],
+  credentialHelper: 'none',
+  signInFlow: 'popup',
+  callbacks: {
+    // Avoid redirects after sign-in.
+    signInSuccessWithAuthResult: () => false
+  }
 }
+
+// Instantiate a Firebase app and database
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+export const db = firebaseApp.firestore();
+// enable the offline database capability
+db.enablePersistence({synchronizeTabs: true})
+  .then(() => console.log('Offline Database Active'))
+  .catch(err => {
+    if (err.code === 'failed-precondition') {
+      console.error('Multiple tabs open, persistence can only be enabled in one tab at a a time.', err)
+    } else if (err.code === 'unimplemented') {
+      console.error('The current browser does not support all of the features required to enable persistence', err)
+    }
+  })
 
 function App() {
 
-  const API_URL = process.env.NODE_ENV === 'development' ?
-    'http://localhost:4000' :
-    'https://db-todo.duckdns.org/api';
-
-  const DB_HOST = process.env.NODE_ENV === 'development' ?
-    'http://localhost:5984' :
-    'https://db-couchdb.duckdns.org';
-
-  const [localDB, setLocalDB] = useState(null);
-  const [remoteDB, setRemoteDB] = useState(null);
-  const [loadingDB, setLoadingDB] = useState(true);
+  const [dbUser, setDbUser] = useState(JSON.parse(localStorage.getItem('dbUser')) || null);
   const [currentListName, setCurrentListName] = useState(localStorage.getItem('currentList') || 'My List');
   const [currentListID, setCurrentListID] = useState(localStorage.getItem('currentListID') || '');
   const [lists, setLists] = useState([]);
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
-  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('loggedIn') || "false");
-  const [userID, setUserID] = useState(localStorage.getItem('userID') || '');
-  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
-  const [userImg, setUserImg] = useState(localStorage.getItem('userImg') || '');
-  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [serviceWorkerInit, setServiceWorkerInit] = useState(false);
+  const [serviceWorkerReg, setServiceWorkerReg] = useState(null);
+  const [user, setUser] = useState(localStorage.getItem('user') || null);
   const [loading, setLoading] = useState(false);
   const [showLists, setShowLists] = useState(false);
+
+  // If you want your app to work offline and load faster, you can change
+  // unregister() to register() below. Note this comes with some pitfalls.
+  // Learn more about service workers: https://bit.ly/CRA-PWA
+  serviceWorker.register({
+    onSuccess: () => setServiceWorkerInit(true),
+    onUpdate: reg => {
+      setServiceWorkerReg(reg);
+    },
+  });
+
+  // show service worker toast on first install
+  useEffect(() => {
+    if (serviceWorkerInit) {
+      toast.success('App available for offline use.')
+    }
+  }, [serviceWorkerInit]);
+
+  // allow user to update site when service worker changes and no active game
+  useEffect(() => {
+    if (serviceWorkerReg && serviceWorkerReg.waiting) {
+      toast.info(
+        <ServiceWorkerToast
+          serviceWorkerReg={serviceWorkerReg}
+        />,
+        {
+          closeOnClick: false,
+          autoClose: false
+        }
+      );
+    }
+  }, [serviceWorkerReg])
 
   // create a new list
   function createList(listName = 'New List') {
@@ -60,173 +124,101 @@ function App() {
     this.todoItems = [];
   }
 
-  // check if server is running
-  useEffect(() => {
-    axios.get(`${API_URL}/test`).then((res) => {
-      console.log(res);
-    })
-  }, [API_URL])
-
-  // get data from the DB on load
-  const getData = useCallback(() => {
-    if (!remoteDB) return;
-    remoteDB.allDocs({ include_docs: true }).then(res => {
-      let fetchedLists = [];
-      res.rows.forEach(row => {
-        fetchedLists.push(row.doc);
-        // TODO add functionality for default list - for now just load first list
-        // if (row.doc.default) {
-        //   setItems(row.doc.todoItems);
-        //   setCurrentListName(row.doc.listName);
-        //   setCurrentListID(row.doc._id);
-        // }
-      })
-      if (!fetchedLists.length) {
-        let blankList = new createList();
-        fetchedLists.push(blankList);
-        localDB.put(blankList);
-      }
-      setItems(fetchedLists[0].todoItems);
-      setCurrentListName(fetchedLists[0].listName);
-      setCurrentListID(fetchedLists[0]._id);
-      setLoadingDB(false);
-      setLists(fetchedLists);
-    });
-  }, [remoteDB, localDB]);
-
-  // set up local DB for each user
-  useEffect(() => {
-    setLocalDB(new PouchDB(userID))
-  }, [userID]);
-
-  // check if remote DB exists and create if not
-  useEffect(() => {
-    if (!userID) return;
-    axios.head(`${DB_HOST}/db-${userID}`).then(res => {
-      if (res.statusText === 'OK') {
-        console.log('DB Exists')
-        setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
-      };
-    }).catch(err => {
-      console.log(err);
-      axios.put(`${API_URL}/db-${userID}`).then(res => {
-        console.log(res)
-        setRemoteDB(new PouchDB(`${DB_HOST}/db-${userID}`));
-      });
-    });
-  }, [DB_HOST, API_URL, userID])
-
-  // get data from the DB when ready
-  useEffect(() => {
-    if (!remoteDB) return;
-    remoteDB.info();
-    getData();
-  }, [remoteDB, getData])
-
-  // This effect handles logins
-  useEffect(() => {
-    localStorage.setItem('loggedIn', loggedIn)
-    localStorage.setItem('userID', userID)
-    localStorage.setItem('userEmail', userEmail)
-    localStorage.setItem('userImg', userImg)
-    localStorage.setItem('userName', userName)
-    localStorage.setItem('currentList', currentListName)
-    localStorage.setItem('currentListID', currentListID)
-  }, [loggedIn, userID, userEmail, userImg, userName, currentListName, currentListID])
-
-  // This effect handles changes to the db from other clients
-  useEffect(() => {
-
-    if (loadingDB) return;
-
-    let dbSync;
-
-    const handleRemoteUpdate = (list) => {
-      // set the list name or delete list
-      let newLists = [...lists];
-      // handle remote list delete
-      if (list._deleted) {
-        let ind = newLists.findIndex(el => el._id === list._id);
-        if (ind !== -1) newLists.splice(ind, 1);
-        setLists(newLists);
-        return;
-      };
-      // add if a new list
-      if (!newLists.find(el => el._id === list._id)) {
-        newLists.push(list);
-        setLists(newLists);
-        return;
-      }
-      // update if existing list
-      newLists.forEach(cur => {
-        if (cur._id === list._id) cur.listName = list.listName;
-        if (list._id === currentListID) setCurrentListName(list.listName);
-      })
-      // set the todo items if current list in state
-      if (currentListID === list._id) {
-        let newItems = [...items];
-        newItems = list.todoItems;
-        setItems(newItems);
-      }
-      setLists(newLists);
+  const loadUser = useCallback(() => {
+    // get user from localStorage if loaded already
+    if (localStorage.getItem('dbUser') !== null) {
+      return
     }
-
-    if (loggedIn === 'true' && remoteDB && localDB) {
-      dbSync = localDB.sync(remoteDB, {
-        live: true,
-        retry: true,
-        include_docs: true,
-      }).on('change', (e) => {
-        console.log('Database Changed');
-        console.log(e);
-        let listChanged = e.change.docs[0];
-        if (e.direction === 'pull') {
-          // Handle update or insert
-          handleRemoteUpdate(listChanged);
-          console.log(`Updataed: ${listChanged._id}`)
+    // get the user from the db and load into state
+    // add the user to the database if doesn't exist
+    db.collection('users').doc(user.uid)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          let newDbUser = doc.data();
+          setDbUser(newDbUser);
+          console.log('User fetched from database')
         } else {
-          console.log('This was a local change');
+          let newDbUser = {
+            creationTime: user.metadata.creationTime,
+            email: user.email,
+            lists: {},
+            name: user.displayName || '',
+            profileURL: user.photoURL || defaultProfile,
+            uid: user.uid,
+          }
+          db.collection('users').doc(user.uid)
+            .set(newDbUser);
+          setDbUser(newDbUser);
+          console.log('New user created')
         }
-      }).on('active', () => {
-        console.log('sync active')
-      }).on('error', () => {
-        console.log('Database Error')
-      });
+      })
+      .catch(error => console.error('Error loading User', error))
+  }, [user]);
+
+  // listen for realtime updates to dbUser if loaded
+  useEffect(() => {
+    let updateUser = null;
+    if (user && user.uid) {
+      console.log('Adding snapshot listener')
+      updateUser = db.collection('users').doc(user.uid)
+        .onSnapshot((doc) => {
+          console.log('firestore snapshot read')
+          setDbUser(doc.data())
+        })
     }
-
     return () => {
-      if (loggedIn === 'true') dbSync.cancel();
-    };
-  }, [items, loggedIn, userID, localDB, remoteDB, loadingDB, lists, currentListID])
+      if (updateUser !== null) {
+        console.log('Removing snapshot listener')
+        updateUser();
+      }
+    }
+  }, [user])
 
+  useEffect(() => {
+    // show toast for successful update
+    if (localStorage.getItem('serviceWorkerUpdated') === 'true') {
+      toast.success('Site Updated');
+      localStorage.setItem('serviceWorkerUpdated', 'false');
+    }
+    // listen for auth state changes
+    const unsubscribe = firebaseApp.auth().onAuthStateChanged(user => {
+      if (user) {
+        // user signed in
+        setUser(user);
+        localStorage.setItem('user', JSON.stringify(user));
+      } else {
+        // user logged out
+        localStorage.clear()
+        setUser(user);
+        setDbUser(null);
+        // TODO reset other state
+      }
+    })
+    // unsubscribe to the listener when unmounting
+    return () => unsubscribe()
+    // eslint-disable-next-line
+  }, []);
+
+  // load the user on login (when user object changes)
+  useEffect(() => {
+    if (user) {
+      loadUser();
+    }
+  }, [user, loadUser]);
+
+  // save variables to localstorage to allow persistence on page reload
+  useEffect(() => {
+    localStorage.setItem('dbUser', JSON.stringify(dbUser) || null);
+    localStorage.setItem('currentList', currentListName);
+    localStorage.setItem('currentListID', currentListID);
+    localStorage.setItem('user', JSON.stringify(user) || null);
+  }, [dbUser, currentListName, currentListID, user])
+
+  // add an item to the list
   async function addItem(item) {
     console.log(item);
-    // get all lists from the DB and update current list
-    // make new list if current list does not exist
-    localDB.allDocs({ include_docs: true }).then(res => {
-      // TODO figure out how to use the list ID as the currentList var and not
-      // the list name as that can be duplicated
-      let listArr = res.rows.filter(row => row.doc._id === currentListID);
-      let newList = {}
-      if (listArr.length) {
-        newList = listArr[0].doc;
-      }
-      console.log(newList)
-      let newItems = newList.todoItems || [];
-      newItems.unshift(item);
-      if (!newList._id) {
-        newList = new createList(currentListName)
-        setCurrentListID(newList._id);
-        newList.default = true;
-      }
-      newList.todoItems = newItems;
-      if (!lists.find(list => list._id === newList._id)) {
-        let newLists = [...lists];
-        newLists.push(newList);
-        setLists(newLists);
-      }
-      localDB.put(newList);
-    })
+    // TODO Add item to db and state
   }
 
   const handleLocalAdd = (e) => {
@@ -273,12 +265,7 @@ function App() {
       if (list._id === currentListID) list.listName = newListName;
     })
     setLists(newLists);
-    // update the local DB
-    if (!localDB) return;
-    localDB.get(currentListID).then(doc => {
-      doc.listName = newListName;
-      localDB.put(doc).catch(e => console.log(e))
-    }).catch(e => console.log(e))
+    // TODO Update db
   }
 
   // delete item from delete button
@@ -294,16 +281,7 @@ function App() {
 
   // send local state changes to the DB
   async function updateItems(newItems) {
-    if (!localDB) return // no local DB
-    localDB.allDocs({ include_docs: true }).then(res => {
-      let curList = res.rows.find(el => el.doc.listName === currentListName);
-      localDB.get(curList.id).then(doc => {
-        doc.todoItems = newItems;
-        localDB.put(doc).catch(e => console.error(e))
-      }).catch(e => {
-        console.error(e)
-      })
-    })
+    console.log('TODO update db items', items)
   }
 
   // sort by completed at top
@@ -318,7 +296,7 @@ function App() {
     return newItems;
   }
 
-  // send updated items to DB
+  // send updated items to DB - TODO only send to firebase when finished editing
   const handleItemUpdate = (e) => {
     // do not update on tab
     if (e.keyCode === 9) return;
@@ -334,7 +312,7 @@ function App() {
       };
       newItems.splice(i + 1, 0, blankItem);
       setItems(newItems);
-      // focus the new element
+      // focus the new element - TODO figure out how to do this properly
       setTimeout(() => {
         document.getElementById(blankItem._id).focus();
       }, 200);
@@ -378,42 +356,14 @@ function App() {
     updateItems(copyItems);
   }
 
-  const resGoogle = (res, history) => {
-    setUserID(res.profileObj.googleId);
-    setUserEmail(res.profileObj.email);
-    setUserImg(res.profileObj.imageUrl);
-    setUserName(res.profileObj.name);
-    setLoggedIn("true");
-    history.push('/lists')
-  }
-
-  const loginLocal = (user, history) => {
-    setUserID(user._id);
-    setUserEmail(user.email);
-    setUserImg(user.img);
-    setUserName(user.name);
-    setLoggedIn("true");
-    history.push('/lists');
-  }
-
-  const respGoogleFail = (res) => {
-    console.log(res);
-  }
-
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.reload(true);
-  }
-
   function updateLists(newList) {
     let newLists = [...lists, newList];
     setLists(newLists);
-    localDB.put(newList);
+    // TODO update db
   }
 
   function deleteList(id) {
     // local changes if only one list
-    debugger
     if (lists.length === 1) {
       let blankList = new createList('New List');
       setLists([blankList]);
@@ -421,7 +371,7 @@ function App() {
       setItems(blankList.todoItems);
       setCurrentListName(blankList.listName);
       setShowLists(false);
-      localDB.put(blankList);
+      // TODO Update db
     } else { // local changes if more than one list
       let newLists = [...lists];
       let ind = newLists.findIndex(el => el._id === id);
@@ -432,11 +382,7 @@ function App() {
       if (ind !== -1) newLists.splice(ind, 1);
       setLists(newLists);
     }
-    // delete from DB
-    localDB.get(id).then(doc => {
-      return localDB.remove(doc);
-    }).then(res => console.log(res))
-      .catch(e => console.log(e));
+    // TODO delete from DB
   }
 
   function switchList(id) {
@@ -449,57 +395,58 @@ function App() {
 
   return (
     <Router>
-      <Route path="/" exact render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return <Home
-          resGoogle={resGoogle}
-          respGoogleFail={respGoogleFail} />
-      }} />
-      <Route path="/login" render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return (
-          <Login
-            loginLocal={loginLocal}
-            loading={loading}
-            setLoading={setLoading}
-          />
-        )
-      }} />
-      <Route path="/signup" render={() => {
-        if (localStorage.getItem('loggedIn') === 'true') return <Redirect to='/lists' />
-        return (
-          <SignUp
-            loginLocal={loginLocal}
-            loading={loading}
-            setLoading={setLoading}
-          />
-        )
-      }} />
-      <PrivateRoute path="/lists" auth={loggedIn} >
-        <Lists
-          handleLogout={handleLogout}
-          loggedIn={loggedIn}
-          userImg={userImg}
-          items={items}
-          setItems={setItems}
-          updateItems={updateItems}
-          handleItemUpdate={handleItemUpdate}
-          handleLocalAdd={handleLocalAdd}
-          handleItemChange={handleItemChange}
-          handleChecked={handleChecked}
-          deleteItem={deleteItem}
-          newItem={newItem}
-          handleNewChange={handleNewChange}
-          currentListName={currentListName}
-          handleListChange={handleListChange}
-          lists={lists}
-          updateLists={updateLists}
-          deleteList={deleteList}
-          switchList={switchList}
-          showLists={showLists}
-          setShowLists={setShowLists}
-        />
-      </PrivateRoute>
+      <ToastContainer
+        autoClose={4000}
+        draggable={false}
+        hideProgressBar
+        newestOnTop={false}
+        transition={Slide}
+      />
+      <Switch>
+        <Route path="/" exact >
+          {localStorage.getItem('user') ?
+            <Redirect to='/lists' />
+            :
+            <Home
+              firebaseApp={firebaseApp}
+              title='Home'
+              uiConfig={uiConfig}
+              loading={loading}
+              setLoading={setLoading}
+            />
+          }
+        </Route>
+        <Route path="/lists" exact >
+          {localStorage.getItem('user') ?
+            <Lists
+              dbUser={dbUser}
+              items={items}
+              setItems={setItems}
+              updateItems={updateItems}
+              handleItemUpdate={handleItemUpdate}
+              handleLocalAdd={handleLocalAdd}
+              handleItemChange={handleItemChange}
+              handleChecked={handleChecked}
+              deleteItem={deleteItem}
+              newItem={newItem}
+              handleNewChange={handleNewChange}
+              currentListName={currentListName}
+              handleListChange={handleListChange}
+              lists={lists}
+              updateLists={updateLists}
+              deleteList={deleteList}
+              switchList={switchList}
+              showLists={showLists}
+              setShowLists={setShowLists}
+            />
+            :
+            <Redirect to='/' />
+          }
+        </Route>
+        <Route>
+          <Redirect to='/' />
+        </Route>
+      </Switch>
     </Router>
   )
 }

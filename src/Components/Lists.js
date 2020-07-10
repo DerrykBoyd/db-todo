@@ -20,8 +20,8 @@ export default function Lists(props) {
         <div className={`App Lists`}>
             <Header
                 handleLogout={props.handleLogout}
-                loggedIn={props.loggedIn}
-                userImg={props.userImg}
+                loggedIn={props.dbUser}
+                userImg={props.dbUser.profileURL}
                 currentListName={props.currentListName}
                 handleListChange={props.handleListChange} />
             <TodoList
