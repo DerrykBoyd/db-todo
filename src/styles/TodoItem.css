@@ -1,18 +1,18 @@
 .todo-item-wrapper {
   display: grid;
-  gap: 20px;
+  gap: 15px;
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
   justify-content: center;
   margin: auto;
-  padding: 0.25rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   width: calc(100% - 1.5rem);
 }
 
 .todo-item {
   color: white;
   text-align: left;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   background-color: #000;
   border: none;
   padding: 0.2rem;
@@ -22,6 +22,10 @@
   content: attr(data-placeholder);
   color: #888;
   font-style: italic;
+}
+
+.checkbox {
+  font-size: 28px;
 }
 
 .todo-item:focus {
