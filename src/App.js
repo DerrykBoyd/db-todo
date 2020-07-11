@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  HashRouter as Router,
+  BrowserRouter as Router,
   Route,
   Redirect,
   Switch
 } from "react-router-dom";
 import { ToastContainer, cssTransition, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { v4 as uuidv4 } from 'uuid';
 
 import * as serviceWorker from './serviceWorker';

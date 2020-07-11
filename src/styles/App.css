@@ -3,7 +3,7 @@
 .App {
   text-align: center;
   background-color: #000;
-  min-height: 100vh;
+  height: 100vh;
   color: white;
   display: flex;
   align-items: center;

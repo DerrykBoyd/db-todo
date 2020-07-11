@@ -2,6 +2,7 @@
   "name": "db-todo",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://dboydgit-to-do.web.app/",
   "dependencies": {
     "array-move": "^2.2.2",
     "firebase": "^7.16.0",
@@ -35,5 +36,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "devDependencies": {}
 }
