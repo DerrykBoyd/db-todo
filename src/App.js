@@ -18,6 +18,7 @@ import 'firebase/firestore';
 // styles
 import './styles/App.css';
 import './styles/animations.css';
+import './styles/Modal.css';
 
 // Components
 import Header from './Components/Header';
@@ -27,6 +28,7 @@ import ServiceWorkerToast from './Components/Toasts/ServiceWorkerToast';
 
 // assets
 import defaultProfile from './assets/profile-avatars/050.svg';
+import ListSettingsModal from './Components/Modals/ListSettingsModal';
 
 const Slide = cssTransition({
   enter: 'toast-in',
@@ -81,6 +83,7 @@ function App() {
   const [serviceWorkerReg, setServiceWorkerReg] = useState(null);
   const [user, setUser] = useState(localStorage.getItem('user') || null);
   const [showLists, setShowLists] = useState(false);
+  const [listModal, setListModal] = useState(false);
 
   // If you want your app to work offline and load faster, you can change
   // unregister() to register() below. Note this comes with some pitfalls.
@@ -191,10 +194,10 @@ function App() {
         localStorage.setItem('user', JSON.stringify(user));
       } else {
         // user logged out
-        localStorage.clear()
-        setUser(user);
+        setUser(null);
         setDbUser(null);
-        // TODO reset other state
+        setCurrentListID('');
+        localStorage.clear();
       }
     })
     // unsubscribe to the listener when unmounting
@@ -213,7 +216,7 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dbUser', JSON.stringify(dbUser) || null);
     localStorage.setItem('currentListID', currentListID || '');
-    if (Object.keys(dbUser.lists).length && !currentListID) {
+    if (dbUser && Object.keys(dbUser.lists).length && !currentListID) {
       setCurrentListID(Object.keys(dbUser.lists)[0]);
     }
   }, [dbUser, currentListID])
@@ -271,7 +274,7 @@ function App() {
       }
     }
     //sort by checked
-    items = sortByCompleted(items);
+    newDbUser.lists[currentListID].items = sortByCompleted(items)
     // set local state
     setDbUser(newDbUser);
     // update the localDB
@@ -329,16 +332,6 @@ function App() {
     }
   }
 
-  // handle list name change
-  const handleListChange = (e) => {
-    let newListName = e.target.value;
-    let newDbUser = { ...dbUser };
-    newDbUser.lists[currentListID].listName = newListName;
-    setDbUser(newDbUser);
-    // TODO Update db
-    console.log('TODO send updated list to the db')
-  }
-
   const handleLocalAdd = (e) => {
     // check if event came from keydown but not enter key => do nothing
     if (e.keyCode && e.keyCode !== 13) return;
@@ -381,6 +374,12 @@ function App() {
     setCurrentListID(id);
   }
 
+  async function updateDbLists(lists) {
+    db.collection('users').doc(user.uid).update({
+      lists: lists
+    });
+  }
+
   function updateLists(newLists) {
     let newDbUser = { ...dbUser };
     newDbUser.lists = newLists;
@@ -389,10 +388,13 @@ function App() {
     updateDbLists(newDbUser.lists)
   }
 
-  async function updateDbLists(lists) {
-    db.collection('users').doc(user.uid).update({
-      lists: lists
-    });
+  // handle list name change
+  const updateListName = (newName) => {
+    let newDbUser = { ...dbUser };
+    newDbUser.lists[currentListID].listName = newName;
+    setDbUser(newDbUser);
+    // TODO Update db
+    updateDbLists(newDbUser.lists);
   }
 
   return (
@@ -407,7 +409,17 @@ function App() {
       <Header
         currentListID={currentListID}
         dbUser={dbUser}
-        handleListChange={handleListChange} />
+        firebaseApp={firebaseApp}
+        setListModal={setListModal}
+      />
+      {listModal && 
+        <ListSettingsModal
+          currentListID={currentListID}
+          dbUser={dbUser}
+          setListModal={setListModal}
+          updateListName={updateListName}
+        />
+      }
       <Switch>
         <Route path="/" exact >
           {localStorage.getItem('user') && dbUser ?
@@ -433,7 +445,6 @@ function App() {
               handleChecked={handleChecked}
               newItem={newItem}
               handleNewChange={handleNewChange}
-              handleListChange={handleListChange}
               updateLists={updateLists}
               switchList={switchList}
               showLists={showLists}

@@ -50,14 +50,15 @@ export default function Header(props) {
           onClick={showProfileMenu}
           src={props.dbUser.profileURL}
           alt="profile"></img>}
-        <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
-          <div className="profile-menu scale-in-tr" ref={ref}>
-            <button
-              className="mat-btn"
-              value="Logout"
-              onClick={() => console.log('TODO Logout')}
-            >Logout</button>
-          </div>
+        <div className={`profile-menu scale-in-tr ${showMenu ? '' : 'hidden'}`} ref={ref}>
+          <button
+            className="mat-btn"
+            value="Logout"
+            onClick={() => {
+              props.firebaseApp.auth().signOut();
+              setShowMenu(false);
+            }}
+          >Logout</button>
         </div>
       </div>
     )
@@ -70,9 +71,15 @@ export default function Header(props) {
         {!props.dbUser && <h1 className='app-title'>dboydgit To-Do</h1>}
         {props.dbUser && props.dbUser.lists && props.dbUser.lists[props.currentListID] &&
           <div className="app-title" >
-            <span>{props.dbUser.lists[props.currentListID].listName}</span>
+            {props.dbUser.lists[props.currentListID].listName}
           </div>}
-        <span className='material-icons'>settings</span>
+        {props.dbUser &&
+          <span
+            className='material-icons'
+            onClick={() => {
+              props.setListModal(true);
+            }}
+          >settings</span>}
         {props.dbUser && profile}
       </div>
     </header>

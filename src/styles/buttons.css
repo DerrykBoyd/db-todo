@@ -1,0 +1,107 @@
+.btn-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn {
+  margin: 0.5rem;
+  padding: 0.5rem;
+  background-color: #000;
+  border-radius: 4px;
+  border: solid 1px white;
+  max-width: 15rem;
+  min-width: 2rem;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn:hover, .btn:focus {
+  outline: none;
+  border-color: grey;
+  background-color: #f7f8f8;
+  cursor: pointer;
+} 
+
+.btn>span {
+  margin-left: 0.5rem;
+}
+
+a.btn {
+  height: 1rem;
+}
+
+.btn-text, .btn-text:hover {
+  background-color: white;
+  border: none;
+}
+
+.toast-btn {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  background-color: #9a0007;
+}
+
+.btn-del {
+  background-color: firebrick;
+  color: white;
+  border-color: var(--app-red-dark);
+}
+
+.btn-del:hover, .btn-del:focus {
+  background-color: darkred;
+  border-color: firebrick;
+}
+
+.btn-del-text {
+  border: none;
+  background-color: transparent;
+  color: firebrick;
+  text-transform: uppercase;
+}
+
+.btn-del-text:hover, .btn-del-text:focus {
+  background-color: #FEECED;
+}
+
+.btn-green {
+  background-color: green;
+  border-color: darkgreen;
+  color: white;
+}
+
+.btn-green:hover, .btn-green:focus {
+  background-color: darkgreen;
+}
+
+.btn-green-text {
+  border: none;
+  color: darkgreen;
+  text-transform: uppercase;
+}
+
+.btn-green-text:hover, .btn-green-text:focus {
+  background-color: #EBFFF0;
+}
+
+.btn-inactive, .btn-inactive:hover, .btn-inactive:focus {
+  background-color: lightgray;
+  color: var(--text-dark-disabled);
+  box-shadow: none;
+  cursor: default;
+  border: none;
+}
+
+.btn-inactive-text, .btn-inactive-text:hover, .btn-inactive-text:focus {
+  background-color: white;
+  border: none;
+  color: var(--text-dark-disabled);
+  cursor: default;
+  text-transform: uppercase;
+}
