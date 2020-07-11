@@ -13,6 +13,9 @@ a {
   color: #5c6bc0;
 }
 
+input {
+  min-width: 0;
+}
 input:focus {
   outline: none;
 }
@@ -22,7 +25,8 @@ input:focus {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  max-width: 450px;
+  width: 100%;
+  max-width: 600px;
   margin: auto;
 }
 

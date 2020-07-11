@@ -1,104 +1,114 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './ListMenu.css';
+import { v4 as uuidv4 } from 'uuid';
+
+// styles
+import '../styles/ListMenu.css';
 
 function ListList(props) {
-    const lists = props.lists;
-    const listItems = lists.map((list) =>
-        <div key={list._id}
-            id={list._id}
-            className='list-item'
-            onClick={props.switchList}>
-            <span>{list.listName}</span>
-            <div id='list-icons'>
-                <i className='material-icons list-icon'
-                    onClick={(e) => {
-                        e.cancelBubble = true;
-                        if (e.stopPropagation) e.stopPropagation();
-                        props.deleteList(list._id)
-                    }}>delete</i>
-                <i className='material-icons list-icon'>arrow_right</i>
-            </div>
-        </div>
-    );
-    return <div className='list-container'>{listItems}</div>
+  const lists = props.lists;
+  const listItems = lists.map((list) =>
+    <div
+      key={list.id}
+      id={list.id}
+      className='list-item'
+      onClick={props.switchList}
+    >
+      <span className='list-name'>{list.listName}</span>
+      <div id='list-icons'>
+        <i className='material-icons list-icon'
+          onClick={(e) => {
+            e.cancelBubble = true;
+            if (e.stopPropagation) e.stopPropagation();
+            props.deleteList(list.id)
+          }}>delete</i>
+        <i className='material-icons list-icon'>arrow_right</i>
+      </div>
+    </div>
+  );
+  return <div className='list-container'>{listItems}</div>
 }
 
 // component to display user lists
 export default function ListMenu(props) {
 
-    const [newListName, setNewListName] = useState('');
-    const [showNewList, setShowNewList] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [showNewList, setShowNewList] = useState(false);
 
-    const inputRef = useRef(null);
+  const inputRef = useRef(null);
 
-    useEffect(() => {
-        if (inputRef.current) inputRef.current.focus();
-    }, [showNewList])
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.focus();
+  }, [showNewList])
 
-    function switchList(e) {
-        console.log('TODO - switch list on click');
-        let id = (e.currentTarget.id);
-        props.switchList(id);
-        props.setShowLists(false);
+  function switchList(e) {
+    let id = (e.currentTarget.id);
+    props.switchList(id);
+    props.setShowLists(false);
+  }
+
+  function showNewListInput() {
+    setShowNewList(true);
+  }
+
+  function addList(e) {
+    let name = newListName;
+    let newListID = uuidv4();
+    const newList = {
+      id: newListID,
+      createdTime: Date.now(),
+      default: false,
+      listName: name,
+      items: []
+    };
+    let newLists = {...props.dbUser.lists}
+    newLists[newListID] = newList;
+    // add the new list to state and DB
+    props.updateLists(newLists);
+    // reset the add input and hide
+    setNewListName('');
+    setShowNewList(false);
+  }
+
+  function updateNewListName(e) {
+    setNewListName(e.target.value)
+  }
+
+  function handleKeyDown(e) {
+    if (e.keyCode === 13 && e.target.value) {
+      addList();
     }
+  }
 
-    function showNewListInput() {
-        setShowNewList(true);
-    }
-
-    function addList(e) {
-        console.log('new list add...');
-        let name = newListName;
-        const newList = {
-            _id: new Date().toISOString(),
-            default: false,
-            listName: name,
-            todoItems: []
-        };
-        // add the new list to state and DB
-        props.updateLists(newList);
-        // reset the add input and hide
-        setNewListName('');
-        setShowNewList(false);
-    }
-
-    function updateNewListName(e) {
-        setNewListName(e.target.value)
-    }
-
-    function handleKeyDown(e) {
-        if (e.keyCode === 13 && e.target.value) {
-            addList();
-        }
-    }
-
-    return (
-        <div className={`list-menu slide-in-bottom`}>
-            <h3 id='list-menu-title'>My Lists</h3>
-            <ListList lists={props.lists}
-                switchList={switchList}
-                deleteList={props.deleteList}
-            />
-            {showNewList && <div className='list-item'>
-                <input
-                    className='new-list-input'
-                    ref={inputRef}
-                    onChange={updateNewListName}
-                    onKeyDown={handleKeyDown}
-                    placeholder='New List...'
-                    value={newListName}
-                />
-                {!newListName && <i className='material-icons'
-                    onClick={() => setShowNewList(false)}>close</i>}
-                {newListName && <i className='material-icons'
-                    onClick={addList}>add_circle_outline</i>}
-            </div>}
-            <div id='add-list'
-                className='list-item'
-                onClick={showNewListInput}>
-                <span>Add New List</span>
-                <i className='material-icons'>add_circle_outline</i>
-            </div>
+  return (
+    <>
+      {props.dbUser && <div className={`list-menu slide-in-bottom`}>
+        <h3 id='list-menu-title'>My Lists</h3>
+        <ListList
+          lists={Object.values(props.dbUser.lists)}
+          switchList={switchList}
+          deleteList={props.deleteList}
+        />
+        {showNewList && <div className='list-item'>
+          <input
+            className='new-list-input'
+            ref={inputRef}
+            onChange={updateNewListName}
+            onKeyDown={handleKeyDown}
+            placeholder='New List...'
+            value={newListName}
+          />
+          {!newListName && <i className='material-icons list-icon'
+            onClick={() => setShowNewList(false)}>close</i>}
+          {newListName && <i className='material-icons list-icon'
+            onClick={addList}>add_circle_outline</i>}
+        </div>}
+        <div id='add-list'
+          className='list-item'
+          onClick={showNewListInput}>
+          <span>Add New List</span>
+          <i className='material-icons list-icon'>add_circle_outline</i>
         </div>
-    )
+      </div>}
+    </>
+  )
 }

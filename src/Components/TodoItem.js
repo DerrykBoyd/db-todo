@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './TodoItem.css';
+
+// styles
+import '../styles/TodoItem.css';
 
 export default function TodoItem(props) {
 
     const [showPopup, setShowPopup] = useState(false);
     const [showClose, setShowClose] = useState(false);
     const [showDrag, setShowDrag] = useState(true);
+
+    const prevValue = useRef();
+
+    useEffect(() => {
+      prevValue.current = props.item.todo;
+      // save to db if not blurred before unmount
+      return () => {
+        if (props.item.todo !== prevValue.current) {
+          let newLists = {...props.dbUser.lists}
+          props.updateLists(newLists)
+        }
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const showMenu = () => {
         if (!showPopup) {
@@ -48,7 +64,7 @@ export default function TodoItem(props) {
     })
 
     return (
-        <div className="todo-item-wrapper" data-id={props.item._id}>
+        <div className="todo-item-wrapper" data-id={props.item.id}>
             <i onClick={toggleChecked}
                 className={`material-icons ${props.checked ? "hidden" : ''}`}>check_box_outline_blank</i>
             <i onClick={toggleChecked}
@@ -56,11 +72,17 @@ export default function TodoItem(props) {
             <input type="text"
                 className={`todo-item ${props.checked ? "todo-checked" : ''}`}
                 placeholder="Todo"
-                key={props.item._id}
-                id={props.item._id}
+                key={props.item.id}
+                id={props.item.id}
                 onChange={props.handleItemChange}
                 onKeyDown={props.handleItemUpdate}
-                onBlur={props.handleItemUpdate}
+                onBlur={() => {
+                  if (props.item.todo !== prevValue.current) {
+                    let newLists = {...props.dbUser.lists}
+                    props.updateLists(newLists)
+                    prevValue.current = props.item.todo;
+                  }
+                }}
                 value={props.item.todo}>
             </input>
             <div className='overflow-icons'>

@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import '../Styles/Header.css';
+
+// styles
+import '../styles/Header.css';
+
+// assets
 import logo from '../assets/logo.svg';
 
 export default function Header(props) {
@@ -32,7 +36,7 @@ export default function Header(props) {
 
   let profile;
 
-  if (!props.userImg || props.userImg === 'undefined') {
+  if (!props.dbUser || !props.dbUser.profileURL) {
     profile = <i
       ref={profileRef}
       className="material-icons profile-img"
@@ -40,18 +44,18 @@ export default function Header(props) {
   } else {
     profile = (
       <div>
-        <img
+        {props.dbUser && props.dbUser.profileURL && <img
           ref={profileRef}
           className="profile-img"
           onClick={showProfileMenu}
-          src={props.userImg}
-          alt="profile"></img>
-          <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
+          src={props.dbUser.profileURL}
+          alt="profile"></img>}
+        <div className={`profile-menu-wrap ${showMenu ? '' : 'hidden'}`}>
           <div className="profile-menu scale-in-tr" ref={ref}>
             <button
               className="mat-btn"
               value="Logout"
-              onClick={props.handleLogout}
+              onClick={() => console.log('TODO Logout')}
             >Logout</button>
           </div>
         </div>
@@ -63,13 +67,13 @@ export default function Header(props) {
     <header className="App-header">
       <div className='header-content'>
         <img src={logo} className="App-logo" alt="logo" />
-        {!props.loggedIn && <h1 className='app-title'>dboydgit To-Do</h1>}
-        {props.loggedIn &&
-          <div
-            className="app-title"
-          >{props.currentListName}</div>}
-        {props.loggedIn && profile}
-        
+        {!props.dbUser && <h1 className='app-title'>dboydgit To-Do</h1>}
+        {props.dbUser && props.dbUser.lists && props.dbUser.lists[props.currentListID] &&
+          <div className="app-title" >
+            <span>{props.dbUser.lists[props.currentListID].listName}</span>
+          </div>}
+        <span className='material-icons'>settings</span>
+        {props.dbUser && profile}
       </div>
     </header>
   )

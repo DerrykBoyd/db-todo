@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import Header from './Header';
+
+// Components
 import TodoList from './TodoList';
 import TodoAdd from './TodoAdd';
 import ListMenu from './ListMenu';
@@ -20,21 +21,17 @@ export default function Lists(props) {
     <div className={`App Lists`}>
       {props.dbUser &&
         <>
-          <Header
-            handleLogout={props.handleLogout}
-            loggedIn={props.dbUser}
-            userImg={props.dbUser.profileURL}
-            currentListName={props.currentListName}
-            handleListChange={props.handleListChange} />
           <TodoList
-            items={props.items}
-            setItems={props.setItems}
-            updateItems={props.updateItems}
+            currentListID={props.currentListID}
+            dbUser = {props.dbUser}
+            deleteItem={props.deleteItem}
             handleItemUpdate={props.handleItemUpdate}
             handleLocalAdd={props.handleLocalAdd}
             handleItemChange={props.handleItemChange}
             handleChecked={props.handleChecked}
-            deleteItem={props.deleteItem}>
+            setDbUser={props.setDbUser}
+            updateLists={props.updateLists}
+          >
           </TodoList>
           <TodoAdd
             newItem={props.newItem}
@@ -45,7 +42,8 @@ export default function Lists(props) {
           </TodoAdd>
           {props.showLists &&
             <ListMenu
-              lists={props.lists}
+              createList={props.createList}
+              dbUser={props.dbUser}
               updateLists={props.updateLists}
               deleteList={props.deleteList}
               switchList={props.switchList}

@@ -6,6 +6,7 @@ import {
   Switch
 } from "react-router-dom";
 import { ToastContainer, cssTransition, toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as serviceWorker from './serviceWorker';
 
@@ -15,10 +16,11 @@ import 'firebase/auth';
 import 'firebase/firestore';
 
 // styles
-import './Styles/App.css';
-import './Styles/animations.css';
+import './styles/App.css';
+import './styles/animations.css';
 
 // Components
+import Header from './Components/Header';
 import Home from './Components/Home';
 import Lists from './Components/Lists';
 import ServiceWorkerToast from './Components/Toasts/ServiceWorkerToast';
@@ -60,7 +62,7 @@ const uiConfig = {
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 export const db = firebaseApp.firestore();
 // enable the offline database capability
-db.enablePersistence({synchronizeTabs: true})
+db.enablePersistence({ synchronizeTabs: true })
   .then(() => console.log('Offline Database Active'))
   .catch(err => {
     if (err.code === 'failed-precondition') {
@@ -73,15 +75,11 @@ db.enablePersistence({synchronizeTabs: true})
 function App() {
 
   const [dbUser, setDbUser] = useState(JSON.parse(localStorage.getItem('dbUser')) || null);
-  const [currentListName, setCurrentListName] = useState(localStorage.getItem('currentList') || 'My List');
   const [currentListID, setCurrentListID] = useState(localStorage.getItem('currentListID') || '');
-  const [lists, setLists] = useState([]);
-  const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [serviceWorkerInit, setServiceWorkerInit] = useState(false);
   const [serviceWorkerReg, setServiceWorkerReg] = useState(null);
   const [user, setUser] = useState(localStorage.getItem('user') || null);
-  const [loading, setLoading] = useState(false);
   const [showLists, setShowLists] = useState(false);
 
   // If you want your app to work offline and load faster, you can change
@@ -116,17 +114,9 @@ function App() {
     }
   }, [serviceWorkerReg])
 
-  // create a new list
-  function createList(listName = 'New List') {
-    this._id = new Date().toISOString();
-    this.default = false;
-    this.listName = listName;
-    this.todoItems = [];
-  }
-
   const loadUser = useCallback(() => {
     // get user from localStorage if loaded already
-    if (localStorage.getItem('dbUser') !== null) {
+    if (!user || localStorage.getItem('dbUser') !== null) {
       return
     }
     // get the user from the db and load into state
@@ -139,18 +129,30 @@ function App() {
           setDbUser(newDbUser);
           console.log('User fetched from database')
         } else {
+          // add a new user entry
+          let newListID = uuidv4();
+          let createdTime = Date.now();
           let newDbUser = {
             creationTime: user.metadata.creationTime,
             email: user.email,
-            lists: {},
+            lists: {
+              [newListID]: {
+                id: newListID,
+                createdTime: createdTime,
+                default: false,
+                listName: 'New List',
+                items: [],
+              },
+            },
             name: user.displayName || '',
             profileURL: user.photoURL || defaultProfile,
             uid: user.uid,
           }
           db.collection('users').doc(user.uid)
-            .set(newDbUser);
+            .set(newDbUser)
+            .then(console.log('New user created'));
           setDbUser(newDbUser);
-          console.log('New user created')
+          setCurrentListID(newListID);
         }
       })
       .catch(error => console.error('Error loading User', error))
@@ -160,16 +162,16 @@ function App() {
   useEffect(() => {
     let updateUser = null;
     if (user && user.uid) {
-      console.log('Adding snapshot listener')
+      console.log('Adding user snapshot listener')
       updateUser = db.collection('users').doc(user.uid)
         .onSnapshot((doc) => {
-          console.log('firestore snapshot read')
+          console.log('snapshot read')
           setDbUser(doc.data())
         })
     }
     return () => {
       if (updateUser !== null) {
-        console.log('Removing snapshot listener')
+        console.log('Removing user snapshot listener')
         updateUser();
       }
     }
@@ -210,15 +212,131 @@ function App() {
   // save variables to localstorage to allow persistence on page reload
   useEffect(() => {
     localStorage.setItem('dbUser', JSON.stringify(dbUser) || null);
-    localStorage.setItem('currentList', currentListName);
-    localStorage.setItem('currentListID', currentListID);
-    localStorage.setItem('user', JSON.stringify(user) || null);
-  }, [dbUser, currentListName, currentListID, user])
+    localStorage.setItem('currentListID', currentListID || '');
+    if (Object.keys(dbUser.lists).length && !currentListID) {
+      setCurrentListID(Object.keys(dbUser.lists)[0]);
+    }
+  }, [dbUser, currentListID])
 
   // add an item to the list
   async function addItem(item) {
-    console.log(item);
-    // TODO Add item to db and state
+    // Add item to db and state
+    let newDbUser = { ...dbUser };
+    newDbUser.lists[currentListID].items.push(item);
+    setDbUser(newDbUser);
+    updateDbLists(newDbUser.lists)
+  }
+
+  // delete item from delete button
+  const deleteItem = (item) => {
+    // remove from local state
+    let newDbUser = { ...dbUser };
+    let items = newDbUser.lists[currentListID].items;
+    let delInd = items.findIndex(el => el.id === item.id);
+    items.splice(delInd, 1);
+    setDbUser(newDbUser);
+    // update db
+    updateDbLists(newDbUser.lists)
+  }
+
+  function deleteList(id) {
+    // Error if only one list
+    if (Object.keys(dbUser.lists).length === 1) {
+      toast.error('Cannot delete default list')
+    } else { // local changes if more than one list
+      let newDbUser = { ...dbUser };
+      // switch to view a different list before deleting
+      if (currentListID === id) {
+        let listIDs = Object.keys(newDbUser.lists);
+        let ind = listIDs.findIndex(el => el === id);
+        if (ind !== 0) switchList(listIDs[ind - 1].id);
+        else switchList(listIDs[ind + 1].id);
+      }
+      // delete list from state
+      delete newDbUser.lists[id];
+      setDbUser(newDbUser);
+      updateDbLists(newDbUser.lists)
+    }
+    // TODO delete from DB
+  }
+
+  // update state and DB when item checked
+  const handleChecked = (item) => {
+    // update the state
+    let newDbUser = { ...dbUser };
+    let items = newDbUser.lists[currentListID].items;
+    for (let i of items) {
+      if (i === item) {
+        i.completed = !i.completed;
+      }
+    }
+    //sort by checked
+    items = sortByCompleted(items);
+    // set local state
+    setDbUser(newDbUser);
+    // update the localDB
+    updateDbLists(newDbUser.lists)
+  }
+
+  // update items in state when typing
+  const handleItemChange = (e) => {
+    let newDbUser = { ...dbUser };
+    let items = newDbUser.lists[currentListID].items;
+    let changeIndex = items.findIndex(el => el.id === e.target.id);
+    items[changeIndex].todo = e.target.value;
+    setDbUser(newDbUser);
+  }
+
+  // send updated items to DB - TODO only send to firebase when finished editing
+  const handleItemUpdate = (e) => {
+    // do not update on tab
+    if (e.keyCode === 9) return;
+    // enter should add a new blank todo
+    else if (e.keyCode === 13) {
+      let newDbUser = { ...dbUser };
+      let items = newDbUser.lists[currentListID].items;
+      let i = items.findIndex(el => el.todo === e.target.value);
+      if (i === -1) return;
+      let blankItem = {
+        id: uuidv4(),
+        createdTime: Date.now(),
+        todo: '',
+        completed: false,
+      };
+      items.splice(i + 1, 0, blankItem);
+      setDbUser(newDbUser);
+      // focus the new element - TODO figure out how to do this properly
+      setTimeout(() => {
+        document.getElementById(blankItem.id).focus();
+      }, 200);
+      return;
+    }
+    // check if deleted and process delete
+    else if (e.keyCode === 8 && !e.target.value) {
+      let newDbUser = { ...dbUser };
+      let items = newDbUser.lists[currentListID].items;
+      // find updated item
+      let updatedIndex = items.findIndex(el => el.id === e.target.id);
+      if (updatedIndex === -1) return; //item not found
+      // delete item from local state
+      items.splice(updatedIndex, 1);
+      setDbUser(newDbUser);
+      // update localDB
+      console.log('TODO send updated list to the db')
+      updateDbLists(newDbUser.lists)
+    } else {
+      console.log('No update needed')
+    }
+  }
+
+  // handle list name change
+  const handleListChange = (e) => {
+    let newListName = e.target.value;
+    let newDbUser = { ...dbUser };
+    newDbUser.lists[currentListID].listName = newListName;
+    setDbUser(newDbUser);
+    // TODO Update db
+    console.log('TODO send updated list to the db')
   }
 
   const handleLocalAdd = (e) => {
@@ -227,18 +345,12 @@ function App() {
     // if value empty do nothing
     if (!newItem) return;
     let itemToAdd = {
-      _id: new Date().toISOString(),
+      id: uuidv4(),
+      createdTime: Date.now(),
       todo: newItem,
       completed: false,
     };
     addItem(itemToAdd);
-    let newItems = [itemToAdd, ...items];
-    setItems(newItems);
-    let newLists = [...lists];
-    newLists.forEach(list => {
-      if (list._id === currentListID) list.todoItems = newItems;
-    })
-    setLists(newLists);
     window.scrollTo({
       top: 0,
       left: 0,
@@ -248,40 +360,9 @@ function App() {
     e.preventDefault();
   }
 
-  // update items in state when typing
-  const handleItemChange = (e) => {
-    let newItems = [...items];
-    let changeIndex = newItems.findIndex(el => el._id === e.target.id);
-    newItems[changeIndex].todo = e.target.value;
-    setItems(newItems);
-  }
-
-  // handle list name change
-  const handleListChange = (e) => {
-    let newListName = e.target.value;
-    setCurrentListName(newListName);
-    let newLists = [...lists];
-    newLists.forEach(list => {
-      if (list._id === currentListID) list.listName = newListName;
-    })
-    setLists(newLists);
-    // TODO Update db
-  }
-
-  // delete item from delete button
-  const deleteItem = (item) => {
-    // remove from local state
-    let copyItems = [...items];
-    let delInd = copyItems.findIndex(el => el._id === item._id);
-    copyItems.splice(delInd, 1);
-    setItems(copyItems);
-    // update localDB
-    updateItems(copyItems);
-  }
-
-  // send local state changes to the DB
-  async function updateItems(newItems) {
-    console.log('TODO update db items', items)
+  // update newItem state on input change
+  const handleNewChange = (e) => {
+    setNewItem(e.target.value);
   }
 
   // sort by completed at top
@@ -296,101 +377,22 @@ function App() {
     return newItems;
   }
 
-  // send updated items to DB - TODO only send to firebase when finished editing
-  const handleItemUpdate = (e) => {
-    // do not update on tab
-    if (e.keyCode === 9) return;
-    // enter should add a new blank todo
-    if (e.keyCode === 13) {
-      let newItems = [...items];
-      let i = newItems.findIndex(el => el.todo === e.target.value);
-      if (i === -1) return;
-      let blankItem = {
-        _id: new Date().toISOString(),
-        todo: '',
-        completed: false,
-      };
-      newItems.splice(i + 1, 0, blankItem);
-      setItems(newItems);
-      // focus the new element - TODO figure out how to do this properly
-      setTimeout(() => {
-        document.getElementById(blankItem._id).focus();
-      }, 200);
-      return;
-    }
-    let copyItems = [...items];
-    // find updated item
-    let updatedIndex = copyItems.findIndex(el => el._id === e.target.id);
-    if (updatedIndex === -1) return; //item not found
-    // check if deleted and process
-    if (e.keyCode === 8 && !e.target.value) {
-      // delete item from local state
-      copyItems.splice(updatedIndex, 1);
-      setItems(copyItems);
-      // update localDB
-      updateItems(copyItems);
-    } else {
-      updateItems(copyItems);
-    }
-  }
-
-  // update newItem state on input change
-  const handleNewChange = (e) => {
-    setNewItem(e.target.value);
-  }
-
-  // update state and DB when item checked
-  const handleChecked = (item) => {
-    // update the state
-    let copyItems = [...items];
-    for (let i of copyItems) {
-      if (i === item) {
-        i.completed = !i.completed;
-      }
-    }
-    //sort by checked
-    copyItems = sortByCompleted(copyItems);
-    // set local state
-    setItems(copyItems);
-    // update the localDB
-    updateItems(copyItems);
-  }
-
-  function updateLists(newList) {
-    let newLists = [...lists, newList];
-    setLists(newLists);
-    // TODO update db
-  }
-
-  function deleteList(id) {
-    // local changes if only one list
-    if (lists.length === 1) {
-      let blankList = new createList('New List');
-      setLists([blankList]);
-      setCurrentListID(blankList._id);
-      setItems(blankList.todoItems);
-      setCurrentListName(blankList.listName);
-      setShowLists(false);
-      // TODO Update db
-    } else { // local changes if more than one list
-      let newLists = [...lists];
-      let ind = newLists.findIndex(el => el._id === id);
-      // switch to view a different list before deleting
-      if (ind !== 0) switchList(lists[ind - 1]._id);
-      else switchList(lists[ind + 1]._id);
-      // delete list from state
-      if (ind !== -1) newLists.splice(ind, 1);
-      setLists(newLists);
-    }
-    // TODO delete from DB
-  }
-
   function switchList(id) {
-    // get the index of the list to switch to
-    let ind = lists.findIndex(el => el._id === id);
     setCurrentListID(id);
-    setItems(lists[ind].todoItems);
-    setCurrentListName(lists[ind].listName);
+  }
+
+  function updateLists(newLists) {
+    let newDbUser = { ...dbUser };
+    newDbUser.lists = newLists;
+    setDbUser(newDbUser);
+    // TODO update db
+    updateDbLists(newDbUser.lists)
+  }
+
+  async function updateDbLists(lists) {
+    db.collection('users').doc(user.uid).update({
+      lists: lists
+    });
   }
 
   return (
@@ -402,41 +404,40 @@ function App() {
         newestOnTop={false}
         transition={Slide}
       />
+      <Header
+        currentListID={currentListID}
+        dbUser={dbUser}
+        handleListChange={handleListChange} />
       <Switch>
         <Route path="/" exact >
-          {localStorage.getItem('user') ?
+          {localStorage.getItem('user') && dbUser ?
             <Redirect to='/lists' />
             :
             <Home
               firebaseApp={firebaseApp}
               title='Home'
               uiConfig={uiConfig}
-              loading={loading}
-              setLoading={setLoading}
             />
           }
         </Route>
         <Route path="/lists" exact >
-          {localStorage.getItem('user') ?
+          {localStorage.getItem('user') && dbUser ?
             <Lists
+              currentListID={currentListID}
               dbUser={dbUser}
-              items={items}
-              setItems={setItems}
-              updateItems={updateItems}
+              deleteItem={deleteItem}
+              deleteList={deleteList}
               handleItemUpdate={handleItemUpdate}
               handleLocalAdd={handleLocalAdd}
               handleItemChange={handleItemChange}
               handleChecked={handleChecked}
-              deleteItem={deleteItem}
               newItem={newItem}
               handleNewChange={handleNewChange}
-              currentListName={currentListName}
               handleListChange={handleListChange}
-              lists={lists}
               updateLists={updateLists}
-              deleteList={deleteList}
               switchList={switchList}
               showLists={showLists}
+              setDbUser={setDbUser}
               setShowLists={setShowLists}
             />
             :

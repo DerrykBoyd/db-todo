@@ -1,5 +1,7 @@
 import React from 'react';
-import './TodoAdd.css';
+
+// styles
+import '../styles/TodoAdd.css';
 
 export default function TodoAdd(props) {
     return (
