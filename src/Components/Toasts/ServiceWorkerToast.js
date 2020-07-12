@@ -19,7 +19,7 @@ export default function ServiceWorkerToast(props) {
     <div className='sw-toast'>
       <h4>New version available</h4>
       <button
-        className='btn'
+        className='btn btn-green'
         onClick={() => {
           updateServiceWorker();
           props.closeToast();
