@@ -402,7 +402,7 @@ function App() {
       return;
     }
     let newFiltered = dbUser.lists[currentListID].items.filter(item => {
-      if (item.todo.includes(e.target.value)) return true
+      if (item.todo.toLowerCase().includes(e.target.value.toLowerCase())) return true
       return false
     })
     setFiltered(newFiltered)
