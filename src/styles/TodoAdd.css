@@ -13,9 +13,9 @@
     display: grid;
     grid-template-columns: 1fr auto auto;
     height: 2.5rem;
-    padding: 0 0.75rem;
     width: calc(100% - 1.5rem);
-    max-width: calc(600px - 2rem);
+    max-width: calc(600px - 1rem);
+    position: relative;
 }
 
 .todo-add-btm {

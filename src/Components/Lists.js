@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 
 // Components
+import ListMenu from './ListMenu';
 import TodoList from './TodoList';
 import TodoAdd from './TodoAdd';
-import ListMenu from './ListMenu';
 
 // component to display user lists
 export default function Lists(props) {
@@ -34,9 +34,11 @@ export default function Lists(props) {
           >
           </TodoList>
           <TodoAdd
-            newItem={props.newItem}
+            filtered={props.filtered}
+            handleFilteredClick={props.handleFilteredClick}
             handleNewChange={props.handleNewChange}
             handleLocalAdd={props.handleLocalAdd}
+            newItem={props.newItem}
             showLists={props.showLists}
             toggleLists={toggleLists}>
           </TodoAdd>

@@ -3,12 +3,13 @@
 .App {
   text-align: center;
   background-color: #000;
-  height: 100vh;
+  min-height: calc(100vh - 4rem);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  margin-top: 4rem;
 }
 
 a {
@@ -23,7 +24,7 @@ input:focus {
 }
 
 .todo-items {
-  padding: 4.5rem 0;
+  padding: 0 0 4.5rem 0;
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;

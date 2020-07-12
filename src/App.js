@@ -79,10 +79,11 @@ function App() {
 
   const [dbUser, setDbUser] = useState(JSON.parse(localStorage.getItem('dbUser')) || null);
   const [currentListID, setCurrentListID] = useState(localStorage.getItem('currentListID') || '');
+  const [filtered, setFiltered] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [serviceWorkerInit, setServiceWorkerInit] = useState(false);
   const [serviceWorkerReg, setServiceWorkerReg] = useState(null);
-  const [user, setUser] = useState(localStorage.getItem('user') || null);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
   const [showLists, setShowLists] = useState(false);
   const [listModal, setListModal] = useState(false);
 
@@ -165,7 +166,8 @@ function App() {
   // listen for realtime updates to dbUser if loaded
   useEffect(() => {
     let updateUser = null;
-    if (user && user.uid) {
+    let newUser = { ...user };
+    if (newUser && newUser.uid) {
       console.log('Adding user snapshot listener')
       updateUser = db.collection('users').doc(user.uid)
         .onSnapshot((doc) => {
@@ -188,11 +190,11 @@ function App() {
       localStorage.setItem('serviceWorkerUpdated', 'false');
     }
     // listen for auth state changes
-    const unsubscribe = firebaseApp.auth().onAuthStateChanged(user => {
-      if (user) {
+    const unsubscribe = firebaseApp.auth().onAuthStateChanged(userdoc => {
+      if (userdoc) {
         // user signed in
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
+        setUser(userdoc);
+        localStorage.setItem('user', JSON.stringify(userdoc));
       } else {
         // user logged out
         setUser(null);
@@ -220,13 +222,20 @@ function App() {
     if (dbUser && Object.keys(dbUser.lists).length && !currentListID) {
       setCurrentListID(Object.keys(dbUser.lists)[0]);
     }
+    if (dbUser && Object.keys(dbUser.lists).length && !Object.keys(dbUser.lists).includes(currentListID)) {
+      try {
+        setCurrentListID(Object.keys(dbUser.lists)[0]);
+      } catch (e) {
+        console.error('Error setting new list', e)
+      }
+    }
   }, [dbUser, currentListID])
 
   // add an item to the list
   async function addItem(item) {
     // Add item to db and state
     let newDbUser = { ...dbUser };
-    newDbUser.lists[currentListID].items.push(item);
+    newDbUser.lists[currentListID].items.unshift(item);
     setDbUser(newDbUser);
     updateDbLists(newDbUser.lists)
   }
@@ -261,7 +270,6 @@ function App() {
       setDbUser(newDbUser);
       updateDbLists(newDbUser.lists)
     }
-    // TODO delete from DB
   }
 
   // update state and DB when item checked
@@ -291,7 +299,7 @@ function App() {
     setDbUser(newDbUser);
   }
 
-  // send updated items to DB - TODO only send to firebase when finished editing
+  // send updated items to DB - only send to firebase when finished editing
   const handleItemUpdate = (e) => {
     // do not update on tab
     if (e.keyCode === 9) return;
@@ -325,8 +333,7 @@ function App() {
       // delete item from local state
       items.splice(updatedIndex, 1);
       setDbUser(newDbUser);
-      // update localDB
-      console.log('TODO send updated list to the db')
+      // update db
       updateDbLists(newDbUser.lists)
     } else {
       console.log('No update needed')
@@ -338,6 +345,21 @@ function App() {
     if (e.keyCode && e.keyCode !== 13) return;
     // if value empty do nothing
     if (!newItem) return;
+    // TODO if value already exists move to top and uncheck
+    let curItems = [...dbUser.lists[currentListID].items];
+    let ind = curItems.findIndex(item => item.todo === newItem);
+    if (ind !== -1) {
+      let newDbUser = { ...dbUser };
+      let newItems = newDbUser.lists[currentListID].items;
+      let existingItemArr = newItems.splice(ind, 1);
+      existingItemArr[0].completed = false;
+      newItems.unshift(existingItemArr[0]);
+      setDbUser(newDbUser);
+      setNewItem('');
+      // TODO send to db when working
+      updateDbLists(newDbUser.lists);
+      return;
+    }
     let itemToAdd = {
       id: uuidv4(),
       createdTime: Date.now(),
@@ -354,9 +376,35 @@ function App() {
     e.preventDefault();
   }
 
+  const handleFilteredClick = (item) => {
+    let newDbUser = { ...dbUser };
+    let newItems = newDbUser.lists[currentListID].items;
+    let clickedInd = newItems.findIndex(el => el.id === item.id);
+    if (clickedInd === -1) {
+      console.log('Item not found')
+      return
+    }
+    let moveArr = newItems.splice(clickedInd, 1);
+    moveArr[0].completed = false;
+    newItems.unshift(moveArr[0]);
+    setDbUser(newDbUser);
+    updateDbLists(newDbUser.lists);
+    setNewItem('');
+    setFiltered([]);
+  }
+
   // update newItem state on input change
   const handleNewChange = (e) => {
     setNewItem(e.target.value);
+    if (!e.target.value) {
+      setFiltered([]);
+      return;
+    }
+    let newFiltered = dbUser.lists[currentListID].items.filter(item => {
+      if (item.todo.includes(e.target.value)) return true
+      return false
+    })
+    setFiltered(newFiltered)
   }
 
   // sort by completed at top
@@ -385,7 +433,7 @@ function App() {
     let newDbUser = { ...dbUser };
     newDbUser.lists = newLists;
     setDbUser(newDbUser);
-    // TODO update db
+    // update db
     updateDbLists(newDbUser.lists)
   }
 
@@ -394,7 +442,7 @@ function App() {
     let newDbUser = { ...dbUser };
     newDbUser.lists[currentListID].listName = newName;
     setDbUser(newDbUser);
-    // TODO Update db
+    // Update db
     updateDbLists(newDbUser.lists);
   }
 
@@ -413,7 +461,7 @@ function App() {
         firebaseApp={firebaseApp}
         setListModal={setListModal}
       />
-      {listModal && 
+      {listModal &&
         <ListSettingsModal
           currentListID={currentListID}
           dbUser={dbUser}
@@ -440,17 +488,19 @@ function App() {
               dbUser={dbUser}
               deleteItem={deleteItem}
               deleteList={deleteList}
+              filtered={filtered}
+              handleFilteredClick={handleFilteredClick}
               handleItemUpdate={handleItemUpdate}
               handleLocalAdd={handleLocalAdd}
               handleItemChange={handleItemChange}
               handleChecked={handleChecked}
-              newItem={newItem}
               handleNewChange={handleNewChange}
-              updateLists={updateLists}
-              switchList={switchList}
-              showLists={showLists}
+              newItem={newItem}
               setDbUser={setDbUser}
               setShowLists={setShowLists}
+              showLists={showLists}
+              switchList={switchList}
+              updateLists={updateLists}
             />
             :
             <Redirect to='/' />

@@ -5,14 +5,14 @@
   align-items: center;
   justify-content: center;
   margin: auto;
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   width: calc(100% - 1.5rem);
 }
 
 .todo-item {
   color: white;
   text-align: left;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   background-color: #000;
   border: none;
   padding: 0.2rem;
@@ -25,7 +25,7 @@
 }
 
 .checkbox {
-  font-size: 28px;
+  font-size: 26px;
 }
 
 .todo-item:focus {
