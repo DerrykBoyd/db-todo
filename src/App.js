@@ -373,6 +373,7 @@ function App() {
       behavior: "smooth"
     });
     setNewItem("");
+    setFiltered([]);
     e.preventDefault();
   }
 
