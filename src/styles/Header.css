@@ -9,6 +9,7 @@
   color: white;
   border-bottom: solid 1px grey;
   background-color: #000;
+  z-index: 10;
 }
 
 .header-content {
