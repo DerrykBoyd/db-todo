@@ -5,7 +5,7 @@
   "homepage": "https://dboydgit-to-do.web.app/",
   "dependencies": {
     "array-move": "^2.2.2",
-    "firebase": "^7.16.0",
+    "firebase": "^10.9.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-firebaseui": "^4.1.0",
